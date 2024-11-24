@@ -1,0 +1,17 @@
+name: compile
+
+on: [workflow_call]
+
+jobs:
+  run-unit-tests:
+    runs-on: ubuntu-24.04
+    container:
+      image: epitechcontent/epitest-docker:latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Compile and run tests
+        run: |
+          make fclean && make
+        timeout-minutes: 5
