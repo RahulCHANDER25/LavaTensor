@@ -5,33 +5,44 @@
 ## Makefile
 ##
 
-CXX := g++ -std=c++20
+CXX := g++ -std=c++23
 CXXFLAGS := -Wall -Wextra -O3
 
-SRC_DIR := src
+SRC_DIR_GEN := src/generator
+SRC_DIR_ANA := src/analyzer
 
-TARGET := my_torch_generator
-SRCS := $(addprefix $(SRC_DIR)/, 				\
-				main.cpp						\
-		)
+SRCS_GEN := $(addsuffix .cpp,               \
+            $(addprefix $(SRC_DIR_GEN)/,    \
+                main                         \
+            ))
 
-OBJS := $(SRCS:%.cpp=%.o)
+SRCS_ANA := $(addsuffix .cpp,               \
+            $(addprefix $(SRC_DIR_ANA)/,    \
+                main                         \
+            ))
 
-INCLUDES := -I$(SRC_DIR)
+OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
+OBJS_ANA := $(SRCS_ANA:%.cpp=%.o)
 
-all: $(TARGET)
+INCLUDES_GEN := -I$(SRC_DIR_GEN)
+INCLUDES_ANA := -I$(SRC_DIR_ANA)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(OBJS) $(LDLIBS)
+all: my_torch_generator my_torch_analyzer
+
+my_torch_generator: $(OBJS_GEN)
+	$(CXX) $(CXXFLAGS) $(INCLUDES_GEN) -o $@ $(OBJS_GEN) $(LDLIBS)
+
+my_torch_analyzer: $(OBJS_ANA)
+	$(CXX) $(CXXFLAGS) $(INCLUDES_ANA) -o $@ $(OBJS_ANA) $(LDLIBS)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(INCLUDES_GEN) $(INCLUDES_ANA) -c $< -o $@
 
 clean:
-	rm -rf $(OBJS)
+	rm -rf $(OBJS_GEN) $(OBJS_ANA)
 
 fclean: clean
-	rm -rf $(TARGET)
+	rm -rf my_torch_generator my_torch_analyzer
 
 re: fclean all
 
