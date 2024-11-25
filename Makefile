@@ -10,22 +10,23 @@ CXXFLAGS := -Wall -Wextra -O3
 
 SRC_DIR_GEN := src/generator
 SRC_DIR_ANA := src/analyzer
+SRC_DIR_UTILS := src/utils
 
 SRCS_GEN := $(addsuffix .cpp,               \
             $(addprefix $(SRC_DIR_GEN)/,    \
-                main                         \
+                main                        \
             ))
 
 SRCS_ANA := $(addsuffix .cpp,               \
             $(addprefix $(SRC_DIR_ANA)/,    \
-                main                         \
+                main                        \
             ))
 
 OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
 OBJS_ANA := $(SRCS_ANA:%.cpp=%.o)
 
-INCLUDES_GEN := -I$(SRC_DIR_GEN)
-INCLUDES_ANA := -I$(SRC_DIR_ANA)
+INCLUDES_GEN := -I$(SRC_DIR_GEN) -I$(SRC_DIR_UTILS)
+INCLUDES_ANA := -I$(SRC_DIR_ANA) -I$(SRC_DIR_UTILS)
 
 all: my_torch_generator my_torch_analyzer
 
