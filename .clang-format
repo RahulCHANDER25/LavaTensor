@@ -1,0 +1,67 @@
+IndentWidth: 4
+
+ColumnLimit: 120
+
+AccessModifierOffset: 0
+# function names
+AlignAfterOpenBracket: BlockIndent
+AllowAllArgumentsOnNextLine: true
+IndentWrappedFunctionNames: false
+AlignOperands: false
+SeparateDefinitionBlocks: Always
+
+# prevent break between return type and function decl
+PenaltyReturnTypeOnItsOwnLine: 10000
+InsertNewlineAtEOF: true
+AllowShortFunctionsOnASingleLine: Empty
+
+# braces placement
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: true
+  AfterStruct: false
+  AfterUnion: false
+  BeforeElse: false
+  IndentBraces: false
+AlignEscapedNewlines: DontAlign
+
+# pointers
+PointerAlignment: Right
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+ReferenceAlignment: Right
+
+# includes
+IndentPPDirectives: BeforeHash
+
+SortIncludes: true
+IncludeBlocks: Preserve
+
+IncludeCategories:
+  - Regex: '^"[[:alnum:]./]+"' # project heahders
+    Priority: 3
+  - Regex: '<criterion/[a-z]+\.h>' # Criterion headers
+    Priority: 2
+  - Regex: "<[[:alnum:]./]+>" # System/Standard headers
+    Priority: 1
+
+# Make args on multiple lines if line overflow
+BinPackArguments: false
+BinPackParameters: false
+ExperimentalAutoDetectBinPacking: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# namespaces
+NamespaceIndentation: None
+
+# switch cases
+IndentCaseLabels: true
+
+# templates
+AlwaysBreakTemplateDeclarations: true
+
+# enum
+AllowShortEnumsOnASingleLine: false
