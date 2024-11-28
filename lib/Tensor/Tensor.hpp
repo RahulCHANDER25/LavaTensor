@@ -21,23 +21,23 @@ public:
 
     // Decorate all the operators (operator+, operator-, matmul, ....)
 
-    Tensor matmul(const Tensor &oth);
+    // Tensor matmul(const Tensor &oth);
 
-    Tensor operator+(Tensor &oth) { return _tensorOperation(oth, std::plus<T>()); }
-    Tensor operator-(Tensor &oth) { return _tensorOperation(oth, std::minus<T>()); }
-    Tensor operator*(Tensor &oth) { return _tensorOperation(oth, std::multiplies<T>()); }
-    Tensor operator/(Tensor &oth)
-    {
-        return _tensorOperation(
-            oth,
-            [] (const T &a, const T &b) {
-                if (b == 0) {
-                    throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-                }
-                return std::divides<T>()(a, b);
-            }
-        );
-    }
+    // Tensor operator+(Tensor &oth) { return _tensorOperation(oth, std::plus<T>()); }
+    // Tensor operator-(Tensor &oth) { return _tensorOperation(oth, std::minus<T>()); }
+    // Tensor operator*(Tensor &oth) { return _tensorOperation(oth, std::multiplies<T>()); }
+    // Tensor operator/(Tensor &oth)
+    // {
+    //     return _tensorOperation(
+    //         oth,
+    //         [] (const T &a, const T &b) {
+    //             if (b == 0) {
+    //                 throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
+    //             }
+    //             return std::divides<T>()(a, b);
+    //         }
+    //     );
+    // }
 
 private:
     TensorArray<T> _tensor; /** TensorArray with the tensor datas */
