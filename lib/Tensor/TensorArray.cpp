@@ -42,6 +42,33 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape):
 }
 
 template <typename T>
+lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType type):
+    _shape(shape),
+    _datas()
+{
+    size_t size = 1;
+
+    for (const auto &s: _shape) {
+        size *= s;
+    }
+    _datas.reserve(size);
+
+    for (size_t k = 0; k < _shape.size(); k++) {
+        _strides.push_back(getStride(k, _shape));
+    }
+    if (type == InitType::RANDOM) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(random() % 2);
+        }
+    }
+    if (type == InitType::ZERO) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(T{0});
+        } 
+    }
+}
+
+template <typename T>
 lava::TensorArray<T>::TensorArray(const TensorArray &tensor):
     _shape(tensor._shape),
     _strides(tensor._strides),
@@ -50,12 +77,40 @@ lava::TensorArray<T>::TensorArray(const TensorArray &tensor):
 }
 
 template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::_tensorApplyOperator(
+lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides):
+    _shape(shape),
+    _strides(strides),
+    _datas()
+{
+    size_t size = 1;
+
+    for (const auto &s: _shape) {
+        size *= s;
+    }
+    for (size_t i = 0; i < size; i++) {
+        _datas.push_back(T{0});
+    }
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceTensorOperation(
     TensorArray &oth,
     std::function<T (const T &, const T &)> func
 )
 {
-    TensorArray newTensor(*this); // Shape and strides from the `this` Tensor.
+    for (size_t i = 0; i < _datas.size(); i++) {
+        this->operator[](i) = func(this->operator[](i), oth[i]);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> lava::TensorArray<T>::_tensorOperation(
+    TensorArray &oth,
+    std::function<T (const T &, const T &)> func
+)
+{
+    TensorArray newTensor(_shape, _strides);
 
     for (size_t i = 0; i < _datas.size(); i++) {
         newTensor[i] = func(this->operator[](i), oth[i]);
@@ -64,15 +119,45 @@ lava::TensorArray<T> lava::TensorArray<T>::_tensorApplyOperator(
 }
 
 template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::_scalarApplyOperator(
+lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceScalarOperation(T k, std::function<T (const T &, const T &)> func)
+{
+    for (size_t i = 0; i < _datas.size(); i++) {
+        this->operator[](i) = func(this->operator[](i), k);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(
     T k,
     std::function<T (const T &, const T &)> func
 )
 {
-    TensorArray<T> newTensor{*this}; // Shape and strides from the `this` Tensor.
+    TensorArray<T> newTensor(_shape, _strides);
 
     for (size_t i = 0; i < _datas.size(); i++) {
         newTensor[i] = func(this->operator[](i), k);
+    }
+    return newTensor;
+}
+
+template <typename T>
+lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) // only 2 DIM Tensors are supported
+{
+    if (oth._shape.size() != _shape.size() && _shape.size() != 2) {
+        throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
+    }
+    if (_shape[1] != oth._shape[0]) {
+        throw std::logic_error("Incorrect dimension for the matrix multiplication.");
+    }
+    TensorArray<T> newTensor({_shape[0], oth._shape[1]}, TensorArray::InitType::ZERO);
+
+    for (int i = 0; i < _shape[0]; i++) {
+        for (int j = 0; j < _shape[1]; j++) {
+            for (int k = 0; k < oth._shape[1]; k++) { // We need to compute this again for gradient
+                newTensor({i, k}) += this->operator()({i, j}) * oth.operator()({j, k});
+            }
+        }
     }
     return newTensor;
 }
