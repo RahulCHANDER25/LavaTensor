@@ -94,7 +94,7 @@ lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vect
 
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceTensorOperation(
-    TensorArray &oth,
+    const TensorArray &oth,
     std::function<T (const T &, const T &)> func
 )
 {
@@ -106,7 +106,7 @@ lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceTensorOperation(
 
 template <typename T>
 lava::TensorArray<T> lava::TensorArray<T>::_tensorOperation(
-    TensorArray &oth,
+    const TensorArray &oth,
     std::function<T (const T &, const T &)> func
 )
 {
@@ -154,7 +154,7 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) // onl
 
     for (int i = 0; i < _shape[0]; i++) {
         for (int j = 0; j < _shape[1]; j++) {
-            for (int k = 0; k < oth._shape[1]; k++) { // We need to compute this again for gradient
+            for (int k = 0; k < oth._shape[1]; k++) { // Here we can change some things for gradient
                 newTensor({i, k}) += this->operator()({i, j}) * oth.operator()({j, k});
             }
         }

@@ -15,12 +15,14 @@ LIB_DIR_UTILS := lib/
 
 SRCS_GEN := $(addsuffix .cpp,               \
             lib/Tensor/TensorArray          \
+            lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_GEN)/,    \
                 main                        \
             ))
 
 SRCS_ANA := $(addsuffix .cpp,               \
             lib/Tensor/TensorArray          \
+            lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_ANA)/,    \
                 main                        \
             ))

@@ -101,10 +101,10 @@ public:
      */
     TensorArray matmul(const TensorArray &oth);
 
-    TensorArray operator+(TensorArray &oth) { return _tensorOperation(oth, std::plus<T>()); }
-    TensorArray operator-(TensorArray &oth) { return _tensorOperation(oth, std::minus<T>()); }
-    TensorArray operator*(TensorArray &oth) { return _tensorOperation(oth, std::multiplies<T>()); }
-    TensorArray operator/(TensorArray &oth)
+    TensorArray operator+(const TensorArray &oth) { return _tensorOperation(oth, std::plus<T>()); }
+    TensorArray operator-(const TensorArray &oth) { return _tensorOperation(oth, std::minus<T>()); }
+    TensorArray operator*(const TensorArray &oth) { return _tensorOperation(oth, std::multiplies<T>()); }
+    TensorArray operator/(const TensorArray &oth)
     {
         return _tensorOperation(
             oth,
@@ -171,18 +171,88 @@ public:
     T operator[](size_t idx) const;
     T &operator[](size_t idx);
 
+    /**
+     *  @brief Returns the tensor's shape as a vector
+     *
+     *  @return Reference to the Tensor's shape as a vector
+     */
     std::vector<int> &shape() { return _shape; }
+
+    /**
+     *  @brief Returns the tensor's shape as a vector
+     *
+     *  @return Const Reference to the Tensor's shape as a vector
+     */
+    const std::vector<int> &shape() const { return _shape; }
+
+    /**
+     *  @brief Returns the tensor' strides as a vector
+     *
+     *  @return Tensor' strides as a vector
+     */
     std::vector<int> &strides() { return _strides; }
 
+    /**
+     *  @brief Returns the tensor' strides as a vector
+     *
+     *  @return Tensor' strides as a vector
+     */
+    const std::vector<int> &strides() const { return _strides; }
+
+    /**
+     *  @brief Returns the tensor's underlying datas
+     *
+     *  @return Tensor's underlying datas as a vector
+     */
     std::vector<T> &datas() { return _datas; }
 
 private:
 
-    // Checks of shape to be done !
-    TensorArray &_inPlaceTensorOperation(TensorArray &oth, std::function<T (const T &, const T &)> func);
-    TensorArray _tensorOperation(TensorArray &oth, std::function<T (const T &, const T &)> func);
+    // TODO: Checks of shape to be done !
 
+    /**
+     *  @brief Do an in-place operation specified by @param func that takes another tensor @param oth on the current tensor.
+     *         This operation takes the elements of `this` and @param oth one by one and perform the operation.
+     *
+     *  @param oth The other tensor that will be used to modify the current one.
+     *  @param func Operation take 2 values and return a single result that modify the current Tensor.
+     *
+     *  @return Reference to the current Tensor that has the result of the operations.
+     */
+    TensorArray &_inPlaceTensorOperation(const TensorArray &oth, std::function<T (const T &, const T &)> func);
+
+    /**
+     *  @brief Do an in-place operation specified by @param func that takes another tensor @param oth on the current tensor.
+     *         This operation takes the elements of `this` and @param oth one by one and perform the operation
+     *         to create a new Tensor
+     *
+     *  @param oth The other tensor that will be used to compute the new one
+     *  @param func Operation take 2 values and return a single result that is added to the Tensor returned.
+     *
+     *  @return A new tensor which has the result of the operation done.
+     */
+    TensorArray _tensorOperation(const TensorArray &oth, std::function<T (const T &, const T &)> func);
+
+    /**
+     *  @brief Do an in-place operation specified, by @param func , that takes a scalar @param oth , on the current tensor.
+     *         This operation takes the elements of `this` one by one and perform an in-place operation with k.
+     *
+     *  @param k Scalar that will be used by @param func for the binary operation done on the current tensor.
+     *  @param func Operation take 2 values and return a single result that modify the current Tensor.
+     *
+     *  @return Reference to the current Tensor that has the result of the operations.
+     */
     TensorArray &_inPlaceScalarOperation(T k, std::function<T (const T &, const T &)> func);
+
+    /**
+     *  @brief Do an in-place operation specified, by @param func , that takes a scalar @param oth , on the current tensor.
+     *         This operation takes the elements of `this` one by one and perform an in-place operation with k.
+     *
+     *  @param k Scalar that will be used by @param func for the binary operation done on the new tensor.
+     *  @param func Operation take 2 values and return a single result that modify the new Tensor.
+     *
+     *  @return A new Tensor that has the result of the operations.
+     */
     TensorArray _scalarOperation(T k, std::function<T (const T &, const T &)> func);
 
     static size_t getStride(int k, const std::vector<int> &shape);
@@ -196,7 +266,7 @@ private:
 }
 
 /**
- * Supported types of TensorArray
+ * Supported types of TensorArray class
  */
 
 template class lava::TensorArray<int>;
@@ -206,3 +276,5 @@ template class lava::TensorArray<float>;
 
 // Iterators for strides based operations ? ==> Duro
 // Utils directory
+
+// Documentation

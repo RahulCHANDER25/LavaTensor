@@ -14,30 +14,40 @@ namespace lava {
 template <typename T>
 class Tensor {
 public:
+
+    Tensor() = delete;
+
+    Tensor(std::initializer_list<int> shape);
+
+    Tensor(const Tensor &tensor);
+
+    Tensor(const TensorArray<T> &tensorArray);
+
     void dispRaw()
     {
         dprintf(1, "Hello I am a Tensor\n");
     }
 
-    // Decorate all the operators (operator+, operator-, matmul, ....)
+    Tensor matmul(const Tensor &oth);
 
-    // Tensor matmul(const Tensor &oth);
+    Tensor operator+(Tensor &oth);
+    Tensor operator-(Tensor &oth);
+    Tensor operator*(Tensor &oth);
+    Tensor operator/(Tensor &oth);
 
-    // Tensor operator+(Tensor &oth) { return _tensorOperation(oth, std::plus<T>()); }
-    // Tensor operator-(Tensor &oth) { return _tensorOperation(oth, std::minus<T>()); }
-    // Tensor operator*(Tensor &oth) { return _tensorOperation(oth, std::multiplies<T>()); }
-    // Tensor operator/(Tensor &oth)
-    // {
-    //     return _tensorOperation(
-    //         oth,
-    //         [] (const T &a, const T &b) {
-    //             if (b == 0) {
-    //                 throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-    //             }
-    //             return std::divides<T>()(a, b);
-    //         }
-    //     );
-    // }
+    Tensor operator+(T k);
+    Tensor operator-(T k);
+    Tensor operator*(T k);
+    Tensor operator/(T k);
+
+    TensorArray<T> &tensor() { return _tensor; }
+    TensorArray<T> &grad() { return _grad; }
+
+    T operator()(std::initializer_list<int> indexes) const; // TODO: Changing to variadic arguments
+    T& operator()(std::initializer_list<int> indexes);
+
+    T operator[](size_t idx) const;
+    T &operator[](size_t idx);
 
 private:
     TensorArray<T> _tensor; /** TensorArray with the tensor datas */
@@ -50,3 +60,12 @@ private:
 };
 
 }
+
+/**
+ * Supported types of Tensor class
+ */
+
+template class lava::Tensor<int>;
+template class lava::Tensor<size_t>;
+template class lava::Tensor<double>;
+template class lava::Tensor<float>;
