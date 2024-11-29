@@ -11,13 +11,18 @@ CXXFLAGS := -Wall -Wextra -O3
 SRC_DIR_GEN := src/generator
 SRC_DIR_ANA := src/analyzer
 SRC_DIR_UTILS := src/utils
+LIB_DIR_UTILS := lib/
 
 SRCS_GEN := $(addsuffix .cpp,               \
+            lib/Tensor/TensorArray          \
+            lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_GEN)/,    \
                 main                        \
             ))
 
 SRCS_ANA := $(addsuffix .cpp,               \
+            lib/Tensor/TensorArray          \
+            lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_ANA)/,    \
                 main                        \
             ))
@@ -25,8 +30,8 @@ SRCS_ANA := $(addsuffix .cpp,               \
 OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
 OBJS_ANA := $(SRCS_ANA:%.cpp=%.o)
 
-INCLUDES_GEN := -I$(SRC_DIR_GEN) -I$(SRC_DIR_UTILS)
-INCLUDES_ANA := -I$(SRC_DIR_ANA) -I$(SRC_DIR_UTILS)
+INCLUDES_GEN := -I$(SRC_DIR_GEN) -I$(SRC_DIR_UTILS) -I$(LIB_DIR_UTILS)
+INCLUDES_ANA := -I$(SRC_DIR_ANA) -I$(SRC_DIR_UTILS) -I$(LIB_DIR_UTILS)
 
 all: my_torch_generator my_torch_analyzer
 
