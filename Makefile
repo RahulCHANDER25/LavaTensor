@@ -25,6 +25,9 @@ SRCS_ANA := $(addsuffix .cpp,               \
             lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_ANA)/,    \
                 main                        \
+                $(addprefix training/,      \
+                    chessTraining           \
+                )                           \
             ))
 
 OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
