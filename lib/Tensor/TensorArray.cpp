@@ -10,6 +10,7 @@
 #include <format>
 #include <iostream>
 #include <stdexcept>
+#include <initializer_list>
 
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
@@ -73,6 +74,14 @@ lava::TensorArray<T>::TensorArray(const TensorArray &tensor):
     _shape(tensor._shape),
     _strides(tensor._strides),
     _datas(tensor._datas)
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas):
+    _shape(std::initializer_list<int>{(int) datas.size()}),
+    _strides(1),
+    _datas(datas)
 {
 }
 
@@ -160,6 +169,24 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) // onl
         }
     }
     return newTensor;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::operator=(const lava::TensorArray<T> &oth)
+{
+    this->_datas = oth._datas;
+    this->_shape = oth._shape;
+    this->_strides = oth._strides;
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::operator=(lava::TensorArray<T> &&oth) noexcept
+{
+    this->_datas = std::move(oth._datas);
+    this->_shape = std::move(oth._shape);
+    this->_strides = std::move(oth._strides);
+    return *this;
 }
 
 template <typename T>

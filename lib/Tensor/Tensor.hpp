@@ -25,10 +25,14 @@ public:
 
     void dispRaw()
     {
-        dprintf(1, "Hello I am a Tensor\n");
+        _tensor.dispRaw();
+        // dprintf(1, "Hello I am a Tensor\n");
     }
 
     Tensor matmul(const Tensor &oth);
+
+    Tensor &operator=(const Tensor<T> &oth);
+    Tensor &operator=(Tensor<T> &&oth) noexcept;
 
     Tensor operator+(Tensor &oth);
     Tensor operator-(Tensor &oth);

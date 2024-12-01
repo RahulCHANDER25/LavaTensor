@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "FenConverter.hpp"
 #include "FenValidator.hpp"
 #include "FileHandler.hpp"
 
@@ -17,7 +18,10 @@ class ChessboardParser {
     public:
     struct ChessboardData {
         std::string fen;
+        std::vector<double> boardData;
+
         std::string expectedOutput;
+        double outLabel = 0.f;
     };
 
     static std::vector<ChessboardData> parseChessboardFile(const std::string &filename)
@@ -50,6 +54,10 @@ class ChessboardParser {
                 );
             }
 
+            data.boardData = FenConverter::convertBoard(data.fen);
+            if (!data.expectedOutput.empty()) {
+                data.outLabel = FenConverter::convertBoardLabel(data.expectedOutput);
+            }
             boards.push_back(data);
         }
         return boards;

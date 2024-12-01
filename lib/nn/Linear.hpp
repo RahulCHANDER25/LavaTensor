@@ -26,6 +26,7 @@ public:
         // x * W (T) + B // => Implement Matrix Vector matmul
         // Add 1 dimension at the end for that (for the vector).
         // All is done in autograd
+        // Just this and it is okkk
         return {2, 3};
     }
 

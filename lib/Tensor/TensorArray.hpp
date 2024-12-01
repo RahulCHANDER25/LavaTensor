@@ -81,6 +81,15 @@ public:
     TensorArray(const TensorArray &tensor);
 
     /**
+     *  @brief Copy constructor of the TensorArray class
+     *
+     *  @param datas Constant reference to a vector with the underlying datas of the tensor.
+     *
+     *  NOTE: The shape is the size of the @param datas vector, and the strides in 1.
+     */
+    TensorArray(const std::vector<T> &datas);
+
+    /**
      *  @brief Default destructor of the TensorArray class
      */
     ~TensorArray()  = default;
@@ -100,6 +109,9 @@ public:
      *  NOTE: Only 2D Tensors are currently supported for matrix multiplication
      */
     TensorArray matmul(const TensorArray &oth);
+
+    TensorArray &operator=(const TensorArray<T> &oth);
+    TensorArray &operator=(TensorArray<T> &&oth) noexcept;
 
     TensorArray operator+(const TensorArray &oth) { return _tensorOperation(oth, std::plus<T>()); }
     TensorArray operator-(const TensorArray &oth) { return _tensorOperation(oth, std::minus<T>()); }

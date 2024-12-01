@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <memory>
+#include "Tensor/Tensor.hpp"
 #include "nn/Module.hpp"
 #include <initializer_list>
 
@@ -15,23 +17,23 @@ namespace lava::nn {
 template <typename T>
 class Sequential : public Module<T> { // Careful maybe again template specification on types
 public:
-    Sequential(std::initializer_list<Module<T>> modules):
+    Sequential(std::initializer_list<std::shared_ptr<Module<T>>> modules):
         _modules(modules)
     {}
 
     ~Sequential() override = default;
 
-    Tensor<T> forward(const Tensor<T> &) override
+    Tensor<T> forward(const Tensor<T> &in) override
     {
-        // Overload operator=()
-        for (const auto &mod: _modules) {
-            // mod.forward()
+        Tensor<T> out{in};
+        for (auto &mod: _modules) {
+            out = mod->forward(out);
         }
-        return {2, 3};
+        return std::move(out);
     }
 
 private:
-    std::vector<Module<T>> _modules;
+    std::vector<std::shared_ptr<Module<T>>> _modules;
 };
 
 }

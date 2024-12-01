@@ -6,8 +6,12 @@
 */
 
 #include <iostream>
+#include <memory>
 #include "ArgParser.hpp"
 #include "ChessboardParser.hpp"
+#include "nn/Linear.hpp"
+#include "nn/Sequential.hpp"
+#include "training/chessTraining.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -30,12 +34,24 @@ int main(int argc, char *argv[])
                 }
             }
         } else if (args.isTrainMode) {
-            {
-                // TODO: #3 Implement training logic
-                std::cout << "Running in training mode" << std::endl;
-                std::string saveFile = args.saveFile.empty() ? args.loadFile : args.saveFile;
-                std::cout << "Saving trained network to: " << saveFile << std::endl;
-            }
+            // TODO: #3 Implement training logic
+            lava::nn::Sequential<double> model{
+                std::make_shared<lava::nn::Linear<double>>(lava::nn::Linear<double>(2, 3))
+            };
+            lava::train::chessTrain(model, boards);
+
+            // for (const auto &board : boards) {
+            //     std::cout << "Analyzing position: " << board.fen << " Size: " << board.boardData.size() << std::endl;
+            //     for (size_t i = 0; i < board.boardData.size(); i++) {
+            //         if (i != 0 && i % 8 == 0) {
+            //             std::cout << " " << i << " ";
+            //         }
+            //         std::cout << ((int) board.boardData[i]);
+            //     }
+            //     std::cout << std::endl;
+            //     std::cout << (board.expectedOutput.empty() ? "No label" : board.expectedOutput) << std::endl;
+            //     std::cout << board.outLabel << std::endl << std::endl;
+            // }
         }
 
         return 0;
