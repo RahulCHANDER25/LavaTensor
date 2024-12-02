@@ -15,11 +15,11 @@ void lava::train::chessTrain(
 )
 {
     for (const auto &board : datas) {
-        TensorArray<double> input(board.boardData);
-        std::cout << board.fen << " " << board.fen << std::endl;
-        auto out = net.forward(input);
+        // Tensor<double> input(TensorArray<double>{board.boardData});
+        // std::cout << board.fen << " " << board.fen << std::endl;
+        // auto out = net.forward(input);
 
-        out.dispRaw();
+        // out.dispRaw();
         // With result compute error
         // backward on error
         // apply grad on layers // if there is an optimizer this is a step
