@@ -7,8 +7,10 @@
 
 #include "TensorArray.hpp"
 
+#include <cmath>
 #include <format>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <initializer_list>
 
@@ -20,24 +22,6 @@ void lava::TensorArray<T>::dispRaw()
         std::cout << elem << " ";
     }
     std::cout << std::endl;
-}
-
-template <typename T>
-lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape) : _shape(shape), _datas()
-{
-    size_t size = 1;
-
-    for (const auto &s : _shape) {
-        size *= s;
-    }
-    _datas.reserve(size);
-
-    for (size_t k = 0; k < _shape.size(); k++) {
-        _strides.push_back(getStride(k, _shape));
-    }
-    for (size_t i = 0; i < size; i++) {
-        _datas.push_back(random() % 2);
-    }
 }
 
 template <typename T>
@@ -54,6 +38,13 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
         _strides.push_back(getStride(k, _shape));
     }
     if (type == InitType::RANDOM) {
+        // std::random_device rd;
+        // std::mt19937 rng{rd()};
+        // std::uniform_real_distribution<double> udist( // He Weight Initialization
+            // -(6.0 / sqrt((double) _shape[0])),
+            // (6.0 / sqrt((double) _shape[0]))
+        // );
+
         for (size_t i = 0; i < size; i++) {
             _datas.push_back(random() % 2);
         }
@@ -63,11 +54,22 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
             _datas.push_back(T{0});
         }
     }
+    if (type == InitType::ONES) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(1);
+        }
+    }
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const TensorArray &tensor)
     : _shape(tensor._shape), _strides(tensor._strides), _datas(tensor._datas)
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
+    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _datas(std::move(tensor._datas))
 {
 }
 

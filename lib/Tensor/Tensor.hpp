@@ -9,6 +9,8 @@
 
 #include <memory>
 #include "Tensor/TensorArray.hpp"
+#include "Tensor/autograd/GradNode.hpp"
+// #include "Tensor/autograd/GradNode.hpp"
 
 namespace lava {
 
@@ -26,8 +28,8 @@ public:
 
     Tensor(std::initializer_list<int> shape);
     Tensor(const Tensor &tensor);
-    Tensor(const TensorArray<T> &tensorArray);
-    Tensor(TensorArray<T> data, bool requiresGrad = false);
+    Tensor(const TensorArray<T> &data, bool requiresGrad = false);
+    Tensor(const TensorArray<T> &data, std::shared_ptr<GradNode<T>> gradNode, bool requiresGrad = false);
 
     void backward();
     void zeroGrad();
@@ -37,10 +39,10 @@ public:
     void dispRaw()
     {
         _tensor.dispRaw();
-        // dprintf(1, "Hello I am a Tensor\n");
     }
 
-    Tensor matmul(const Tensor &oth);
+    Tensor matmul(Tensor &oth); // Need this
+    Tensor sum();
 
     Tensor &operator=(const Tensor<T> &oth);
     Tensor &operator=(Tensor<T> &&oth) noexcept;
@@ -60,6 +62,8 @@ public:
     const TensorArray<T> &tensor() const { return _tensor; }
     const TensorArray<T> &grad() const { return _grad; }
 
+    std::shared_ptr<GradNode<T>> gradNode() { return _gradNode; }
+
     T operator()(std::initializer_list<int> indexes) const; // TODO: Changing to variadic arguments
     T& operator()(std::initializer_list<int> indexes);
 
@@ -68,11 +72,13 @@ public:
 
 private:
     TensorArray<T> _tensor; /** TensorArray with the tensor datas */
-    TensorArray<T> _grad; /** TensorArray with the tensor gradient => Maybe std::optionnal for non-leaf and inference mode ? */
+    TensorArray<T> _grad; /** TensorArray with the tensor gradient */
     bool _requiresGrad{false};
 
     std::vector<std::shared_ptr<Tensor>> _previous;
     BackwardFunction<T> _gradFn;
+
+    std::shared_ptr<GradNode<T>> _gradNode = nullptr; // Default when having a gradient is AccumulateGrad
 
     static Tensor createWithGrad(
         TensorArray<T> data,
@@ -80,10 +86,10 @@ private:
         BackwardFunction<T> gradFn
     );
 
-    // std::shared_ptr<BackwardFunc> _node;
-    /** Node (BackwardFunc associated) of the current tensor for the backpropagation
-        => No node if it is not a leaf, but the backwardFunc is still added to the graph
-    */
+    static Tensor createWithGrad(
+        TensorArray<T> data,
+        std::shared_ptr<GradNode<T>> gradNode
+    );
 };
 
 }
@@ -96,3 +102,6 @@ template class lava::Tensor<int>;
 template class lava::Tensor<size_t>;
 template class lava::Tensor<double>;
 template class lava::Tensor<float>;
+
+// The previous is not the Tensor but the Nodes
+// Delete the nodes at backward

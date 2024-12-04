@@ -29,6 +29,7 @@ class TensorArray {
     public:
     enum class InitType {
         ZERO,
+        ONES,
         RANDOM,
         RANGE
     };
@@ -37,15 +38,7 @@ class TensorArray {
      *  @brief Default constructor is deleted because a shape is need when intializing a Tensor.
      */
     TensorArray() = delete;
-    /**
-     *  @brief Constructor of TensorArray with the initial shape of the tensor.
-     *
-     *  @param shape Initial shape of the tensor created
-     *
-     *  NOTE: This constructor inits the strides with the shape and
-     *       it inits the underlying datas randomly.
-     */
-    TensorArray(std::initializer_list<int> shape);
+
     /**
      *  @brief Constructor of TensorArray with the initial shape of the tensor.
      *
@@ -55,7 +48,7 @@ class TensorArray {
      *  NOTE: This constructor inits the strides with the shape and
      *       it inits the underlying datas randomly.
      */
-    TensorArray(std::initializer_list<int> shape, InitType type);
+    TensorArray(std::initializer_list<int> shape, InitType type = InitType::RANDOM);
 
     /**
      *  @brief Constructor of TensorArray a shape and a strides given as parameters as vectors.
@@ -67,6 +60,7 @@ class TensorArray {
      *        it inits the underlying datas with default value of @tparam T (eg. `0` for `int`).
      */
     TensorArray(const std::vector<int> &shape, const std::vector<int> &strides);
+
     /**
      *  @brief Copy constructor of the TensorArray class
      *
@@ -75,6 +69,16 @@ class TensorArray {
      *  NOTE: This constructor copy everything, that includes the strides and the shape.
      */
     TensorArray(const TensorArray &tensor);
+
+    /**
+     *  @brief Move constructor of the TensorArray class
+     *
+     *  @param tensor Rvalue reference to a Tensor array that will be copied.
+     *
+     *  NOTE: This constructor move everything, that includes the strides and the shape.
+     */
+    TensorArray(TensorArray &&tensor) noexcept;
+
     /**
      *  @brief Copy constructor of the TensorArray class
      *
