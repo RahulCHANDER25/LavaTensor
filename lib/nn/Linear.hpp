@@ -23,6 +23,7 @@ public:
 
     Tensor<T> forward(const Tensor<T> &) override
     {
+        // x * _weights.tensor().transpose() + _biases; // Do this again
         // x * W (T) + B // => Implement Matrix Vector matmul
         // Add 1 dimension at the end for that (for the vector).
         // All is done in autograd

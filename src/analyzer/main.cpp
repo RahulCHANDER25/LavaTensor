@@ -20,29 +20,24 @@
 
 int main(int , char *[])
 {
-    lava::Tensor<double> tensor1({2, 2}, true);
-    lava::Tensor<double> tensor2({2, 2}, true);
+    lava::Tensor<double> a({2, 2}, true);
+    lava::Tensor<double> b({2, 2}, true);
+    lava::Tensor<double> d({2, 2}, true);
 
-    lava::TensorArray<double> grad({2, 2}, lava::TensorArray<double>::InitType::ONES);
+    a.dispRaw();
+    b.dispRaw();
 
-    // lava::MulBackward<double> back{tensor1, tensor2};
+    std::cout << std::endl;
 
-    std::cout << "Tensor:\n";
-    tensor1.tensor().dispRaw();
-    tensor2.tensor().dispRaw();
+    auto c = a.matmul(b);
 
-    std::cout << "\nGrad Before:\n";
-    tensor1.grad().dispRaw();
-    tensor2.grad().dispRaw();
+    c.dispRaw();
 
-    auto out = tensor1 * tensor2;
-    // back.backward(grad);
+    c.sum().backward();
 
-    out.sum().backward();
-    out.backward();
-    std::cout << "\nGrad After:\n";
-    tensor1.grad().dispRaw();
-    tensor2.grad().dispRaw();
+    std::cout << std::endl;
+    a.grad().dispRaw();
+    b.grad().dispRaw();
     // auto out = tensor1 * tensor2;
 
     // tensor1.dispRaw();

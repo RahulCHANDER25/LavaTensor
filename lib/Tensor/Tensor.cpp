@@ -12,6 +12,7 @@
 #include "Tensor/autograd/AddBackward.hpp"
 #include "Tensor/autograd/DivBackward.hpp"
 #include "Tensor/autograd/GradNode.hpp"
+#include "Tensor/autograd/MMBackward.hpp"
 #include "Tensor/autograd/MulBackward.hpp"
 #include "Tensor/autograd/SubBackward.hpp"
 #include "Tensor/autograd/SumBackward.hpp"
@@ -67,8 +68,9 @@ lava::Tensor<T> lava::Tensor<T>::matmul(Tensor &oth)
             othPtr->_grad += gradWrtOth;
         }
     };
+    auto gradNode = std::make_shared<MMBackward<T>>(*this, oth);
 
-    return createWithGrad(result, {thisPtr, othPtr}, gradFn);
+    return createWithGrad(result, gradNode);
 }
 
 template <typename T>
