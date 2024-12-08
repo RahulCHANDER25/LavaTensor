@@ -62,6 +62,11 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
             _datas.push_back(1);
         }
     }
+    if (type == InitType::RANGE) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(i);
+        }
+    }
 }
 
 template <typename T>
@@ -185,7 +190,7 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
         isUnsqueezed = true;
         unsqueezed();
     }
-    if (oth._shape.size() != _shape.size() && _shape.size() != 2) {
+    if (oth._shape.size() != _shape.size()) {
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
     }
     if (_shape[1] != oth._shape[0]) {

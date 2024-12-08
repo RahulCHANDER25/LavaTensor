@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <iostream>
 #include "nn/Module.hpp"
 
 namespace lava::nn {
@@ -24,10 +23,7 @@ public:
 
     Tensor<T> forward(Tensor<T> &x) override
     {
-        _weights.dispRaw();
-        auto out = x.matmul(_weights); // + _biases; // Matrix Vector product
-        _biases.dispRaw();
-        return out;
+        return x.matmul(_weights) + _biases;
     }
 
     Tensor<T> _weights;

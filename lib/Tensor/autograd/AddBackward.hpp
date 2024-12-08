@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <iostream>
 #include "Tensor/Tensor.hpp"
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
@@ -51,9 +52,13 @@ public:
     void backward() override
     {
         if (this->_nextGrads[0]) {
+            std::cout << "Ones array !\n";
+            std::cout << _onesArr.shape()[1] << std::endl;
             this->_nextGrads[0]->backward(_onesArr);
         }
         if (this->_nextGrads[1]) {
+            std::cout << "Ones array !\n";
+            std::cout << _onesArr.shape()[1] << std::endl;
             this->_nextGrads[1]->backward(_onesArr);
         }
     }
