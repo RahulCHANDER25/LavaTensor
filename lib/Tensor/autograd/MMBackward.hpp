@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cstdio>
+#include <iostream>
 #include "Tensor/Tensor.hpp"
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
@@ -31,42 +33,52 @@ public:
 
     void backward(TensorArray<T> grad) override
     {
-        for (int i = 0; i < _tensorACpy.shape()[0]; i++) {
-            for (int j = 0; j < _tensorACpy.shape()[1]; j++) {
-                for (int k = 0; k < _tensorBCpy.shape()[1]; k++) {
-                    _newGradA({i, j}) += _tensorBCpy({j, k});
-                    _newGradB({j, k}) += _tensorACpy({i, j});
-                }
-            }
-        }
-
         if (this->_nextGrads[0]) {
-            this->_nextGrads[0]->backward(grad * _newGradA);
+            // matrixmul as the next gradient
+            this->_nextGrads[0]->backward(grad * _tensorBCpy.transpose());
         }
         if (this->_nextGrads[1]) {
-            this->_nextGrads[1]->backward(grad * _newGradB);
+            this->_nextGrads[1]->backward(grad * _tensorACpy.transpose());
         }
     }
 
     void backward() override
     {
+        std::cout << "In Tensors\n";
+        _tensorACpy.dispRaw();
+        _tensorBCpy.dispRaw();
+        std::cout << "Indexes\n";
         for (int i = 0; i < _tensorACpy.shape()[0]; i++) {
             for (int j = 0; j < _tensorACpy.shape()[1]; j++) {
                 for (int k = 0; k < _tensorBCpy.shape()[1]; k++) {
+                    std::cout << j << " " << k << std::endl;
+                    std::cout << i << " " << j << std::endl << std::endl;
                     _newGradA({i, j}) += _tensorBCpy({j, k});
                     _newGradB({i, j}) += _tensorACpy({i, j});
                 }
             }
         }
+        std::cout << "Grad A Value:\n";
+        _newGradA.dispRaw();
+        std::cout << "Grad B Value:\n";
+        _newGradB.dispRaw();
         if (this->_nextGrads[0]) {
-            this->_nextGrads[0]->backward(_newGradA);
+            this->_nextGrads[0]->backward(_newGradB);
         }
         if (this->_nextGrads[1]) {
-            this->_nextGrads[1]->backward(_newGradB);
+            this->_nextGrads[1]->backward(_newGradA);
         }
     }
 
 private:
+void _printVec(std::vector<int> &vec)
+{
+    for (auto v: vec) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
+}
+
     TensorArray<T> _tensorACpy;
     TensorArray<T> _tensorBCpy;
 

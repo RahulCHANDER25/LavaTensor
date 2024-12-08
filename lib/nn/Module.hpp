@@ -16,7 +16,7 @@ class Module {
 public:
     virtual ~Module() = default;
 
-    virtual Tensor<T> forward(const Tensor<T> &/* input */) = 0;
+    virtual Tensor<T> forward(Tensor<T> &/* input */) = 0;
 
     // Eval mode function ==> Put all submodules to eval and tensors too
 };

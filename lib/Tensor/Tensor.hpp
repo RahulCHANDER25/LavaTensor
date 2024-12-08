@@ -10,15 +10,11 @@
 #include <memory>
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
-// #include "Tensor/autograd/GradNode.hpp"
 
 namespace lava {
 
 template <typename T>
 class Tensor;
-
-template <typename T>
-using BackwardFunction = std::function<void(const Tensor<T> &)>;
 
 template <typename T>
 class Tensor {
@@ -75,16 +71,7 @@ private:
     TensorArray<T> _grad; /** TensorArray with the tensor gradient */
     bool _requiresGrad{false};
 
-    std::vector<std::shared_ptr<Tensor>> _previous;
-    BackwardFunction<T> _gradFn;
-
     std::shared_ptr<GradNode<T>> _gradNode = nullptr; // Default when having a gradient is AccumulateGrad
-
-    static Tensor createWithGrad(
-        TensorArray<T> data,
-        std::vector<std::shared_ptr<Tensor<T>>> prev,
-        BackwardFunction<T> gradFn
-    );
 
     static Tensor createWithGrad(
         TensorArray<T> data,

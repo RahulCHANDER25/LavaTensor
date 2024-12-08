@@ -117,8 +117,11 @@ class TensorArray {
      *
      *  NOTE: Only 2D Tensors are currently supported for matrix multiplication
      */
-    TensorArray matmul(const TensorArray &oth) const;
+    TensorArray matmul(TensorArray &oth);
     TensorArray transpose() const;
+    TensorArray &transposed();
+    TensorArray &unsqueezed(size_t dim = 0);
+    TensorArray &removeDim(size_t dim = 0);
 
     TensorArray &operator=(TensorArray<T> &&oth) noexcept;
 
@@ -316,7 +319,7 @@ class TensorArray {
      *  @return A new Tensor that has the result of the operations.
      */
     TensorArray _scalarOperation(T k, std::function<T(const T &, const T &)> func) const;
-    static size_t getStride(int k, const std::vector<int> &shape);
+    static size_t getStride(size_t k, const std::vector<int> &shape);
 
     std::vector<int> _shape;   /** Shape of the Tensor */
     std::vector<int> _strides; /** Stride of the Tensor */

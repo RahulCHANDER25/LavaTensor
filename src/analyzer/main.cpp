@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <memory>
+#include <vector>
 #include "ArgParser.hpp"
 #include "ChessboardParser.hpp"
 #include "Tensor/Tensor.hpp"
@@ -18,26 +19,30 @@
 #include "nn/Sequential.hpp"
 #include "training/chessTraining.hpp"
 
+void printVec(std::vector<int> &vec)
+{
+    for (auto v: vec) {
+        std::cout << v << std::endl;
+    }
+}
+
 int main(int , char *[])
 {
-    lava::Tensor<double> a({2, 2}, true);
-    lava::Tensor<double> b({2, 2}, true);
-    lava::Tensor<double> d({2, 2}, true);
+    lava::Tensor<double> x({2}, true);
 
-    a.dispRaw();
-    b.dispRaw();
+    lava::nn::Linear<double> lin{2, 1};
 
-    std::cout << std::endl;
+    x.dispRaw();
+    auto c = lin.forward(x); // Fix the matrix mul and for 1 dim and so on
 
-    auto c = a.matmul(b);
-
+    std::cout << "Res:\n";
     c.dispRaw();
+    std::cout << "Backward:\n";
+    c.backward();
 
-    c.sum().backward();
-
-    std::cout << std::endl;
-    a.grad().dispRaw();
-    b.grad().dispRaw();
+    std::cout << "Grads:\n";
+    lin._weights.grad().dispRaw();
+    lin._biases.grad().dispRaw();
     // auto out = tensor1 * tensor2;
 
     // tensor1.dispRaw();

@@ -23,7 +23,7 @@ public:
 
     ~Sequential() override = default;
 
-    Tensor<T> forward(const Tensor<T> &in) override
+    Tensor<T> forward(Tensor<T> &in) override
     {
         Tensor<T> out{in};
         for (auto &mod: _modules) {

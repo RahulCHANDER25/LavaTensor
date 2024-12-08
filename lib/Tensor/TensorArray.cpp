@@ -7,11 +7,14 @@
 
 #include "TensorArray.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <vector>
 #include <initializer_list>
 
 template <typename T>
@@ -144,8 +147,44 @@ lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T
 }
 
 template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) const // only 2 DIM Tensors are supported
+lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 {
+    if (dim > _shape.size()) {   
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    _shape.insert(_shape.begin() + dim, 1);
+    _strides.push_back(1);
+    for (size_t k = 0; k < _shape.size(); k++) {
+        _strides[k] = getStride(k, _shape);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
+{
+    if (dim > _shape.size()) {   
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    _shape.erase(_shape.begin() + dim);
+    _strides.pop_back();
+    for (size_t k = 0; k < _shape.size(); k++) {
+        _strides[k] = getStride(k, _shape);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DIM Tensors are supported
+{
+    if (oth.shape().size() == 1 && _shape.size() == 1) {
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    bool isUnsqueezed = false;
+    if (_shape.size() == 1) {
+        isUnsqueezed = true;
+        unsqueezed();
+    }
     if (oth._shape.size() != _shape.size() && _shape.size() != 2) {
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
     }
@@ -160,6 +199,9 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) const 
                 newTensor({i, k}) += this->operator()({i, j}) * oth.operator()({j, k});
             }
         }
+    }
+    if (isUnsqueezed) {
+        removeDim();
     }
     return newTensor;
 }
@@ -180,14 +222,31 @@ lava::TensorArray<T> lava::TensorArray<T>::transpose() const
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for transpose");
     }
 
-    TensorArray<T> result({_shape[1], _shape[0]}, InitType::ZERO);
+    std::vector<int> newShape(_shape.size());
+    std::vector<int> newStrides(_strides.size());
+    std::reverse_copy(_shape.begin(), _shape.end(), newShape.begin());
+    std::reverse_copy(_strides.begin(), _strides.end(), newStrides.begin());
+
+    TensorArray<T> result(newShape, newStrides);
 
     for (int i = 0; i < _shape[0]; i++) {
         for (int j = 0; j < _shape[1]; j++) {
-            result({j, i}) = this->operator()({i, j});
+            result({i, j}) = this->operator()({i, j});
         }
     }
     return result;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::transposed()
+{
+    if (_shape.size() != 2) {
+        throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for transpose");
+    }
+
+    std::reverse(_shape.begin(), _shape.end());
+    std::reverse(_strides.begin(), _strides.end());
+    return *this;
 }
 
 template <typename T>
@@ -246,9 +305,12 @@ T &lava::TensorArray<T>::operator()(std::initializer_list<int> indexes)
 }
 
 template <typename T>
-size_t lava::TensorArray<T>::getStride(int k, const std::vector<int> &shape)
+size_t lava::TensorArray<T>::getStride(size_t k, const std::vector<int> &shape)
 {
-    int stride = 1;
+    if (k == (shape.size() - 1)) {
+        return 1;
+    }
+    size_t stride = 1;
 
     for (size_t j = k + 1; j < shape.size(); j++) {
         stride *= shape[j];
