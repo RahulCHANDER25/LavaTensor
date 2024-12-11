@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdio>
+#include <iostream>
 #include "Tensor/Tensor.hpp"
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
@@ -37,7 +38,8 @@ public:
             this->_nextGrads[0]->backward(grad.matmul(_tensorBCpy));
         }
         if (this->_nextGrads[1]) {
-            this->_nextGrads[1]->backward(grad.matmul(_tensorACpy));
+            _tensorACpy.transposed();
+            this->_nextGrads[1]->backward(_tensorACpy.matmul(grad));
         }
     }
 
