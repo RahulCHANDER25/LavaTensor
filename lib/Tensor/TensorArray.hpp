@@ -29,6 +29,7 @@ class TensorArray {
     public:
     enum class InitType {
         ZERO,
+        ONES,
         RANDOM,
         RANGE
     };
@@ -37,15 +38,7 @@ class TensorArray {
      *  @brief Default constructor is deleted because a shape is need when intializing a Tensor.
      */
     TensorArray() = delete;
-    /**
-     *  @brief Constructor of TensorArray with the initial shape of the tensor.
-     *
-     *  @param shape Initial shape of the tensor created
-     *
-     *  NOTE: This constructor inits the strides with the shape and
-     *       it inits the underlying datas randomly.
-     */
-    TensorArray(std::initializer_list<int> shape);
+
     /**
      *  @brief Constructor of TensorArray with the initial shape of the tensor.
      *
@@ -55,7 +48,7 @@ class TensorArray {
      *  NOTE: This constructor inits the strides with the shape and
      *       it inits the underlying datas randomly.
      */
-    TensorArray(std::initializer_list<int> shape, InitType type);
+    TensorArray(std::initializer_list<int> shape, InitType type = InitType::RANDOM);
 
     /**
      *  @brief Constructor of TensorArray a shape and a strides given as parameters as vectors.
@@ -67,6 +60,7 @@ class TensorArray {
      *        it inits the underlying datas with default value of @tparam T (eg. `0` for `int`).
      */
     TensorArray(const std::vector<int> &shape, const std::vector<int> &strides);
+
     /**
      *  @brief Copy constructor of the TensorArray class
      *
@@ -75,6 +69,25 @@ class TensorArray {
      *  NOTE: This constructor copy everything, that includes the strides and the shape.
      */
     TensorArray(const TensorArray &tensor);
+
+    /**
+     *  @brief Move constructor of the TensorArray class
+     *
+     *  @param tensor Rvalue reference to a Tensor array that will be copied.
+     *
+     *  NOTE: This constructor move everything, that includes the strides and the shape.
+     */
+    TensorArray(TensorArray &&tensor) noexcept;
+
+    /**
+     *  @brief Copy constructor of the TensorArray class
+     *
+     *  @param datas Constant reference to a vector with the underlying datas of the tensor.
+     *
+     *  NOTE: The shape is the size of the @param datas vector, and the strides in 1.
+     */
+    TensorArray(const std::vector<T> &datas);
+
     /**
      *  @brief Default destructor of the TensorArray class
      */
@@ -104,8 +117,13 @@ class TensorArray {
      *
      *  NOTE: Only 2D Tensors are currently supported for matrix multiplication
      */
-    TensorArray matmul(const TensorArray &oth) const;
+    TensorArray matmul(TensorArray &oth);
     TensorArray transpose() const;
+    TensorArray &transposed();
+    TensorArray &unsqueezed(size_t dim = 0);
+    TensorArray &removeDim(size_t dim = 0);
+
+    TensorArray &operator=(TensorArray<T> &&oth) noexcept;
 
     TensorArray operator+(const TensorArray &oth) const
     {
@@ -301,7 +319,7 @@ class TensorArray {
      *  @return A new Tensor that has the result of the operations.
      */
     TensorArray _scalarOperation(T k, std::function<T(const T &, const T &)> func) const;
-    static size_t getStride(int k, const std::vector<int> &shape);
+    static size_t getStride(size_t k, const std::vector<int> &shape);
 
     std::vector<int> _shape;   /** Shape of the Tensor */
     std::vector<int> _strides; /** Stride of the Tensor */

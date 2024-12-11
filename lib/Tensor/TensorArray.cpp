@@ -7,9 +7,15 @@
 
 #include "TensorArray.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <format>
 #include <iostream>
+#include <random>
 #include <stdexcept>
+#include <vector>
+#include <initializer_list>
 
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
@@ -19,24 +25,6 @@ void lava::TensorArray<T>::dispRaw()
         std::cout << elem << " ";
     }
     std::cout << std::endl;
-}
-
-template <typename T>
-lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape) : _shape(shape), _datas()
-{
-    size_t size = 1;
-
-    for (const auto &s : _shape) {
-        size *= s;
-    }
-    _datas.reserve(size);
-
-    for (size_t k = 0; k < _shape.size(); k++) {
-        _strides.push_back(getStride(k, _shape));
-    }
-    for (size_t i = 0; i < size; i++) {
-        _datas.push_back(random() % 2);
-    }
 }
 
 template <typename T>
@@ -53,6 +41,13 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
         _strides.push_back(getStride(k, _shape));
     }
     if (type == InitType::RANDOM) {
+        // std::random_device rd;
+        // std::mt19937 rng{rd()};
+        // std::uniform_real_distribution<double> udist( // He Weight Initialization
+            // -(6.0 / sqrt((double) _shape[0])),
+            // (6.0 / sqrt((double) _shape[0]))
+        // );
+
         for (size_t i = 0; i < size; i++) {
             _datas.push_back(random() % 2);
         }
@@ -60,6 +55,16 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
     if (type == InitType::ZERO) {
         for (size_t i = 0; i < size; i++) {
             _datas.push_back(T{0});
+        }
+    }
+    if (type == InitType::ONES) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(1);
+        }
+    }
+    if (type == InitType::RANGE) {
+        for (size_t i = 0; i < size; i++) {
+            _datas.push_back(i);
         }
     }
 }
@@ -71,8 +76,24 @@ lava::TensorArray<T>::TensorArray(const TensorArray &tensor)
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides)
-    : _shape(shape), _strides(strides), _datas()
+lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
+    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _datas(std::move(tensor._datas))
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas):
+    _shape(std::initializer_list<int>{(int) datas.size()}),
+    _strides(1),
+    _datas(datas)
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides):
+    _shape(shape),
+    _strides(strides),
+    _datas()
 {
     size_t size = 1;
 
@@ -131,9 +152,45 @@ lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T
 }
 
 template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) const // only 2 DIM Tensors are supported
+lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 {
-    if (oth._shape.size() != _shape.size() && _shape.size() != 2) {
+    if (dim > _shape.size()) {   
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    _shape.insert(_shape.begin() + dim, 1);
+    _strides.push_back(1);
+    for (size_t k = 0; k < _shape.size(); k++) {
+        _strides[k] = getStride(k, _shape);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
+{
+    if (dim > _shape.size()) {   
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    _shape.erase(_shape.begin() + dim);
+    _strides.pop_back();
+    for (size_t k = 0; k < _shape.size(); k++) {
+        _strides[k] = getStride(k, _shape);
+    }
+    return *this;
+}
+
+template <typename T>
+lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DIM Tensors are supported
+{
+    if (oth.shape().size() == 1 && _shape.size() == 1) {
+        throw std::logic_error("[ERR] Scalar Product not supported yet");
+    }
+    bool isUnsqueezed = false;
+    if (_shape.size() == 1) {
+        isUnsqueezed = true;
+        unsqueezed();
+    }
+    if (oth._shape.size() != _shape.size()) {
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
     }
     if (_shape[1] != oth._shape[0]) {
@@ -148,7 +205,19 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(const TensorArray &oth) const 
             }
         }
     }
+    if (isUnsqueezed) {
+        removeDim();
+    }
     return newTensor;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::operator=(lava::TensorArray<T> &&oth) noexcept
+{
+    this->_datas = std::move(oth._datas);
+    this->_shape = std::move(oth._shape);
+    this->_strides = std::move(oth._strides);
+    return *this;
 }
 
 template <typename T>
@@ -158,14 +227,31 @@ lava::TensorArray<T> lava::TensorArray<T>::transpose() const
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for transpose");
     }
 
-    TensorArray<T> result({_shape[1], _shape[0]}, InitType::ZERO);
+    std::vector<int> newShape(_shape.size());
+    std::vector<int> newStrides(_strides.size());
+    std::reverse_copy(_shape.begin(), _shape.end(), newShape.begin());
+    std::reverse_copy(_strides.begin(), _strides.end(), newStrides.begin());
+
+    TensorArray<T> result(newShape, newStrides);
 
     for (int i = 0; i < _shape[0]; i++) {
         for (int j = 0; j < _shape[1]; j++) {
-            result({j, i}) = this->operator()({i, j});
+            result({i, j}) = this->operator()({i, j});
         }
     }
     return result;
+}
+
+template <typename T>
+lava::TensorArray<T> &lava::TensorArray<T>::transposed()
+{
+    if (_shape.size() != 2) {
+        throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for transpose");
+    }
+
+    std::reverse(_shape.begin(), _shape.end());
+    std::reverse(_strides.begin(), _strides.end());
+    return *this;
 }
 
 template <typename T>
@@ -224,9 +310,12 @@ T &lava::TensorArray<T>::operator()(std::initializer_list<int> indexes)
 }
 
 template <typename T>
-size_t lava::TensorArray<T>::getStride(int k, const std::vector<int> &shape)
+size_t lava::TensorArray<T>::getStride(size_t k, const std::vector<int> &shape)
 {
-    int stride = 1;
+    if (k == (shape.size() - 1)) {
+        return 1;
+    }
+    size_t stride = 1;
 
     for (size_t j = k + 1; j < shape.size(); j++) {
         stride *= shape[j];

@@ -10,7 +10,7 @@ CXXFLAGS := -Wall -Wextra -O3
 
 SRC_DIR_GEN := src/generator
 SRC_DIR_ANA := src/analyzer
-SRC_DIR_UTILS := src/utils
+SRC_DIR_UTILS := src/utils/
 LIB_DIR_UTILS := lib/
 
 SRCS_GEN := $(addsuffix .cpp,               \
@@ -23,8 +23,14 @@ SRCS_GEN := $(addsuffix .cpp,               \
 SRCS_ANA := $(addsuffix .cpp,               \
             lib/Tensor/TensorArray          \
             lib/Tensor/Tensor               \
+            $(addprefix $(SRC_DIR_UTILS),   \
+                FenConverter                \
+            )                               \
             $(addprefix $(SRC_DIR_ANA)/,    \
                 main                        \
+                $(addprefix training/,      \
+                    chessTraining           \
+                )                           \
             ))
 
 OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
