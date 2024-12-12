@@ -18,14 +18,14 @@ class CrossEntropyLoss : public Module<T> {
     public:
     CrossEntropyLoss() : _lastInput({1}), _lastTarget({1}) {}
 
-    Tensor<T> forward(const Tensor<T> &input) override
+    Tensor<T> forward(Tensor<T> &input) override
     {
         (void)input;
         throw std::runtime_error("CrossEntropyLoss requires a target index. Use forward(input, targetIndex) instead.");
     }
 
     // Our specialized forward method for loss computation
-    T forward(const Tensor<T> &input, size_t targetIndex)
+    T forward(Tensor<T> &input, size_t targetIndex)
     {
         _lastInput = input;
 
@@ -63,31 +63,31 @@ class CrossEntropyLoss : public Module<T> {
         return loss;
     }
 
-    Tensor<T> &backward(Tensor<T> &gradOutput) override
-    {
-        auto &gradData = gradOutput.tensor().datas();
-        const auto &inputData = _lastInput.tensor().datas();
-        const auto &targetData = _lastTarget.tensor().datas();
+    // Tensor<T> &backward(Tensor<T> &gradOutput) override
+    // {
+    //     auto &gradData = gradOutput.tensor().datas();
+    //     const auto &inputData = _lastInput.tensor().datas();
+    //     const auto &targetData = _lastTarget.tensor().datas();
 
-        T maxVal = inputData[0];
-        for (size_t i = 1; i < inputData.size(); ++i) {
-            maxVal = std::max(maxVal, inputData[i]);
-        }
+    //     T maxVal = inputData[0];
+    //     for (size_t i = 1; i < inputData.size(); ++i) {
+    //         maxVal = std::max(maxVal, inputData[i]);
+    //     }
 
-        T sum = 0;
-        std::vector<T> softmax(inputData.size());
-        for (size_t i = 0; i < inputData.size(); ++i) {
-            softmax[i] = std::exp(inputData[i] - maxVal);
-            sum += softmax[i];
-        }
+    //     T sum = 0;
+    //     std::vector<T> softmax(inputData.size());
+    //     for (size_t i = 0; i < inputData.size(); ++i) {
+    //         softmax[i] = std::exp(inputData[i] - maxVal);
+    //         sum += softmax[i];
+    //     }
 
-        for (size_t i = 0; i < gradData.size(); ++i) {
-            softmax[i] /= sum;
-            gradData[i] = softmax[i] - targetData[i];
-        }
+    //     for (size_t i = 0; i < gradData.size(); ++i) {
+    //         softmax[i] /= sum;
+    //         gradData[i] = softmax[i] - targetData[i];
+    //     }
 
-        return gradOutput;
-    }
+    //     return gradOutput;
+    // }
 
     private:
     Tensor<T> _lastInput;

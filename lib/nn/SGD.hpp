@@ -36,7 +36,7 @@ class SGD {
         }
     }
 
-    void step()
+    void step() // Recheck this
     {
         const T maxGrad = 1.0;
 

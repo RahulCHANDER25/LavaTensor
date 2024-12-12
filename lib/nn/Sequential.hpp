@@ -23,7 +23,7 @@ class Sequential : public Module<T> {
 
     ~Sequential() override = default;
 
-    Tensor<T> forward(const Tensor<T> &in) override
+    Tensor<T> forward(Tensor<T> &in) override
     {
         Tensor<T> out{in};
         for (auto &mod : _modules) {
@@ -43,7 +43,7 @@ class Sequential : public Module<T> {
     }
 
     private:
-    std::vector<std::shared_ptr<Module<T>>> _modules;
+    std::vector<std::shared_ptr<Module<T>>> _modules; // Enhance this
 };
 
 } // namespace lava::nn

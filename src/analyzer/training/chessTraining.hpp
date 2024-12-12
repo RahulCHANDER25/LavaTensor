@@ -11,6 +11,7 @@
 #include <vector>
 #include "ChessboardParser.hpp"
 #include "nn/Module.hpp"
+#include "nn/Sequential.hpp"
 
 namespace lava::train {
 
@@ -21,6 +22,13 @@ struct TrainingConfig {
     std::string saveFile;
     bool shouldSave{false};
 };
+
+void trainSummary(
+    const std::vector<ChessboardParser::ChessboardData> &datas,
+    const TrainingConfig &config
+);
+
+void networkSummary(lava::nn::Sequential<double> *sequential);
 
 void chessTrain(
     lava::nn::Module<double> &net,

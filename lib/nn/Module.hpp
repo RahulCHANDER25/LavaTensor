@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../Tensor/Tensor.hpp"
+#include "Tensor/Tensor.hpp"
 
 namespace lava::nn {
 
@@ -16,12 +16,7 @@ class Module {
     public:
     virtual ~Module() = default;
 
-    virtual Tensor<T> forward(const Tensor<T> &input) = 0;
-
-    virtual Tensor<T> &backward(Tensor<T> &gradOutput)
-    {
-        return gradOutput; // Default implementation
-    }
+    virtual Tensor<T> forward(Tensor<T> &input) = 0;
 
     Tensor<T> operator()(const Tensor<T> &input)
     {

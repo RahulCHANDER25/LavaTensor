@@ -5,7 +5,6 @@
 ** chessTraining
 */
 
-#include "training/chessTraining.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -13,10 +12,12 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+
 #include "Tensor/TensorArray.hpp"
 #include "nn/CrossEntropyLoss.hpp"
 #include "nn/SGD.hpp"
 #include "nn/Sequential.hpp"
+#include "training/chessTraining.hpp"
 #include "utils/NetworkSaver.hpp"
 
 namespace lava::train {
@@ -33,6 +34,37 @@ size_t getLabelIndex(const std::string &labelStr)
     return 5; // Nothing
 }
 
+void trainSummary(const std::vector<ChessboardParser::ChessboardData> &datas, const TrainingConfig &config)
+{
+    std::cout << "\nStarting training with " << datas.size() << " samples" << std::endl;
+    std::cout << "Training Configuration:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    std::cout << "Learning rate: " << config.learningRate << std::endl;
+    std::cout << "Batch size: " << config.batchSize << std::endl;
+    std::cout << "Number of epochs: " << config.epochs << std::endl;
+    std::cout << "Save file: " << (config.saveFile.empty() ? "none" : config.saveFile) << std::endl;
+    std::cout << "Should save: " << (config.shouldSave ? "yes" : "no") << std::endl;
+    std::cout << "----------------------" << std::endl;
+}
+
+void networkSummary(lava::nn::Sequential<double> *sequential) // In nn.Module
+{
+    std::cout << "\nNetwork Architecture:" << std::endl;
+    std::cout << "----------------------" << std::endl;
+    for (size_t i = 0; i < sequential->layers().size(); ++i) {
+        const auto &layer = sequential->layers()[i];
+        if (auto linear = std::dynamic_pointer_cast<nn::Linear<double>>(layer)) {
+            std::cout << "Layer " << i << ": Linear(in=" << linear->_weights.tensor().shape()[0]
+                      << ", out=" << linear->_weights.shape()[1] << ")" << std::endl;
+        } else if (std::dynamic_pointer_cast<nn::ReLU<double>>(layer)) {
+            std::cout << "Layer " << i << ": ReLU" << std::endl;
+        } else if (std::dynamic_pointer_cast<nn::Softmax<double>>(layer)) {
+            std::cout << "Layer " << i << ": Softmax" << std::endl;
+        }
+    }
+    std::cout << "----------------------" << std::endl;
+}
+
 void chessTrain(
     nn::Module<double> &net,
     const std::vector<ChessboardParser::ChessboardData> &datas,
@@ -44,7 +76,9 @@ void chessTrain(
     if (!sequential) {
         throw std::runtime_error("Network must be Sequential");
     }
-    nn::SGD<double> optimizer(sequential->layers(), config.learningRate);
+    nn::SGD<double> optimizer(
+        sequential->layers(), config.learningRate
+    ); // Store parameters inside a module and put it inside optimizer
 
     // Create shuffled indices for batching
     std::vector<size_t> indices(datas.size());
@@ -52,30 +86,8 @@ void chessTrain(
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::cout << "\nStarting training with " << datas.size() << " samples" << std::endl;
-    std::cout << "Training Configuration:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    std::cout << "Learning rate: " << config.learningRate << std::endl;
-    std::cout << "Batch size: " << config.batchSize << std::endl;
-    std::cout << "Number of epochs: " << config.epochs << std::endl;
-    std::cout << "Save file: " << (config.saveFile.empty() ? "none" : config.saveFile) << std::endl;
-    std::cout << "Should save: " << (config.shouldSave ? "yes" : "no") << std::endl;
-    std::cout << "----------------------" << std::endl;
-
-    std::cout << "\nNetwork Architecture:" << std::endl;
-    std::cout << "----------------------" << std::endl;
-    for (size_t i = 0; i < sequential->layers().size(); ++i) {
-        const auto &layer = sequential->layers()[i];
-        if (auto linear = std::dynamic_pointer_cast<nn::Linear<double>>(layer)) {
-            std::cout << "Layer " << i << ": Linear(in=" << linear->_weights.tensor().shape()[0]
-                      << ", out=" << linear->_weights.tensor().shape()[1] << ")" << std::endl;
-        } else if (std::dynamic_pointer_cast<nn::ReLU<double>>(layer)) {
-            std::cout << "Layer " << i << ": ReLU" << std::endl;
-        } else if (std::dynamic_pointer_cast<nn::Softmax<double>>(layer)) {
-            std::cout << "Layer " << i << ": Softmax" << std::endl;
-        }
-    }
-    std::cout << "----------------------" << std::endl;
+    trainSummary(datas, config);
+    networkSummary(sequential);
 
     for (size_t epoch = 0; epoch < config.epochs; epoch++) {
         double epochLoss = 0.0;
@@ -87,9 +99,10 @@ void chessTrain(
             size_t batchSize = std::min(config.batchSize, indices.size() - i);
             double batchLoss = 0.0;
             optimizer.zeroGrad();
+
             for (size_t j = 0; j < batchSize; j++) {
-                size_t idx = indices[i + j];
-                const auto &board = datas[idx];
+                // Input formatting
+                const auto &board = datas[indices[i + j]];
 
                 std::vector<int> inputShape = {1, static_cast<int>(board.boardData.size())};
                 std::vector<int> strides = {static_cast<int>(board.boardData.size()), 1};
@@ -98,31 +111,30 @@ void chessTrain(
                 lava::TensorArray<double> tensorArray(inputShape, strides);
                 tensorArray.datas() = normalizedData;
                 Tensor<double> input(tensorArray);
+
+                // Forward Pass
                 auto output = net.forward(input);
 
                 size_t labelIndex = getLabelIndex(board.expectedOutput);
-
-                double loss = criterion.forward(output, labelIndex);
-                batchLoss += loss;
-
-                size_t predictedClass = 0;
+                size_t predictedClass = output.argmax();
                 const auto &outputData = output.tensor().datas();
-                double maxProb = outputData[0];
-                for (size_t k = 1; k < outputData.size(); k++) {
-                    if (outputData[k] > maxProb) {
-                        maxProb = outputData[k];
-                        predictedClass = k;
-                    }
-                }
 
+                // Computing loss
+                auto loss = criterion.forward(output, labelIndex);
+                // loss.backward() // here
+
+                // Adding to the loss log with the value of the loss function
+                batchLoss += loss;
                 if (predictedClass == labelIndex) {
                     correct++;
                 }
 
+                // ---- Normally it should stop here ----
+
                 TensorArray<double> gradArray({static_cast<int>(outputData.size())}, {1});
                 std::fill(gradArray.datas().begin(), gradArray.datas().end(), 0.0);
                 Tensor<double> gradOutput(gradArray);
-                gradOutput = criterion.backward(gradOutput);
+                // gradOutput = criterion.backward(gradOutput);
 
                 auto &gradData = gradOutput.tensor().datas();
                 for (auto &grad : gradData) {
@@ -132,7 +144,7 @@ void chessTrain(
                     }
                 }
 
-                net.backward(gradOutput);
+                // net.backward(gradOutput);
             }
 
             optimizer.step();

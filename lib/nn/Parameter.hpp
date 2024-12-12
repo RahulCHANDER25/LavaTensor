@@ -6,7 +6,7 @@
 namespace lava::nn {
 
 template <typename T>
-class Parameter {
+class Parameter { // 2 Tensors with each of them a gradient associated is not needed.
     public:
     Parameter() = default;
 
