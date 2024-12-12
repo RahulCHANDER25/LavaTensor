@@ -47,6 +47,12 @@ lava::Tensor<T>::Tensor(const TensorArray<T> &data, std::shared_ptr<GradNode<T>>
 }
 
 template <typename T>
+size_t lava::Tensor<T>::argmax()
+{
+    return _tensor.argmax();
+}
+
+template <typename T>
 lava::Tensor<T> lava::Tensor<T>::matmul(Tensor &oth)
 {
     TensorArray<T> result = _tensor.matmul(oth._tensor);
