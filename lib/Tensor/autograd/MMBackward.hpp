@@ -8,7 +8,6 @@
 #pragma once
 
 #include <cstdio>
-#include <iostream>
 #include "Tensor/Tensor.hpp"
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
@@ -21,9 +20,7 @@ public:
     MMBackward(Tensor<T> &tensorA, Tensor<T> &tensorB):
         lava::GradNode<T>(),
         _tensorACpy(tensorA.tensor()),
-        _tensorBCpy(tensorB.tensor()),
-        _newGradA(tensorA.tensor().shape(), tensorA.tensor().strides()),
-        _newGradB(tensorB.tensor().shape(), tensorB.tensor().strides())
+        _tensorBCpy(tensorB.tensor())
     {
         this->_nextGrads.push_back(tensorA.gradNode());
         this->_nextGrads.push_back(tensorB.gradNode());
@@ -33,40 +30,32 @@ public:
 
     void backward(TensorArray<T> grad) override
     {
+        // For A: grad_A = grad_C × B^T
         if (this->_nextGrads[0]) {
-            _tensorBCpy.transposed();
-            this->_nextGrads[0]->backward(grad.matmul(_tensorBCpy));
+            auto bTransposed = _tensorBCpy;
+            bTransposed.transposed();
+            this->_nextGrads[0]->backward(grad.matmul(bTransposed));
         }
+
+        // For B: grad_B = A^T × grad_C
         if (this->_nextGrads[1]) {
-            _tensorACpy.transposed();
-            this->_nextGrads[1]->backward(_tensorACpy.matmul(grad));
+            auto aTransposed = _tensorACpy;
+            aTransposed.transposed();
+            this->_nextGrads[1]->backward(aTransposed.matmul(grad));
         }
     }
 
     void backward() override
     {
-        for (int i = 0; i < _tensorACpy.shape()[0]; i++) {
-            for (int j = 0; j < _tensorACpy.shape()[1]; j++) {
-                for (int k = 0; k < _tensorBCpy.shape()[1]; k++) {
-                    _newGradA({i, j}) += _tensorBCpy({j, k});
-                    _newGradB({j, k}) += _tensorACpy({i, j});
-                }
-            }
-        }
-        if (this->_nextGrads[0]) {
-            this->_nextGrads[0]->backward(_newGradA);
-        }
-        if (this->_nextGrads[1]) {
-            this->_nextGrads[1]->backward(_newGradB);
-        }
+        // This should never be called without a gradient
+        TensorArray<T> ones(_tensorACpy.shape(), _tensorACpy.strides());
+        std::fill(ones.datas().begin(), ones.datas().end(), 1);
+        backward(ones);
     }
 
 private:
     TensorArray<T> _tensorACpy;
     TensorArray<T> _tensorBCpy;
-
-    TensorArray<T> _newGradA;
-    TensorArray<T> _newGradB;
 };
 
 }

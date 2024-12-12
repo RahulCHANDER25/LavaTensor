@@ -41,15 +41,24 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
         _strides.push_back(getStride(k, _shape));
     }
     if (type == InitType::RANDOM) {
-        // std::random_device rd;
-        // std::mt19937 rng{rd()};
-        // std::uniform_real_distribution<double> udist( // He Weight Initialization
-            // -(6.0 / sqrt((double) _shape[0])),
-            // (6.0 / sqrt((double) _shape[0]))
-        // );
+        std::random_device rd;
+        std::mt19937 gen(rd());
 
-        for (size_t i = 0; i < size; i++) {
-            _datas.push_back(random() % 2);
+        if constexpr (std::is_floating_point_v<T>) {
+            // He initialization for floating point types
+            T stddev = static_cast<T>(std::sqrt(2.0 / _shape[0]));
+            std::normal_distribution<T> dist(0.0, stddev);
+            for (size_t i = 0; i < size; i++) {
+                _datas.push_back(dist(gen));
+            }
+        } else {
+            // For integer types, use a uniform distribution
+            // Scale based on input size similar to He init
+            int range = static_cast<int>(std::sqrt(6.0 / _shape[0]));
+            std::uniform_int_distribution<int> dist(-range, range);
+            for (size_t i = 0; i < size; i++) {
+                _datas.push_back(static_cast<T>(dist(gen)));
+            }
         }
     }
     if (type == InitType::ZERO) {
@@ -82,18 +91,14 @@ lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<T> &datas):
-    _shape(std::initializer_list<int>{(int) datas.size()}),
-    _strides(1),
-    _datas(datas)
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
+    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _datas(datas)
 {
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides):
-    _shape(shape),
-    _strides(strides),
-    _datas()
+lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides)
+    : _shape(shape), _strides(strides), _datas()
 {
     size_t size = 1;
 
@@ -154,7 +159,7 @@ lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 {
-    if (dim > _shape.size()) {   
+    if (dim > _shape.size()) {
         throw std::logic_error("[ERR] Scalar Product not supported yet");
     }
     _shape.insert(_shape.begin() + dim, 1);
@@ -168,7 +173,7 @@ lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
 {
-    if (dim > _shape.size()) {   
+    if (dim > _shape.size()) {
         throw std::logic_error("[ERR] Scalar Product not supported yet");
     }
     _shape.erase(_shape.begin() + dim);
@@ -322,4 +327,3 @@ size_t lava::TensorArray<T>::getStride(size_t k, const std::vector<int> &shape)
     }
     return stride;
 }
-

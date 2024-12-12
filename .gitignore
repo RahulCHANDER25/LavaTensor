@@ -3,3 +3,7 @@ my_torch_generator
 my_torch_analyzer
 .cache
 compile_commands.json
+venv/
+*.nn
+*.txt
+test.sh

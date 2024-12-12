@@ -12,18 +12,16 @@
 #include <vector>
 
 class FenConverter {
-public:
+    public:
     static const std::map<std::string, double> OUT_RESULTS;
 
     FenConverter() = default;
     ~FenConverter() = default;
 
     static std::vector<double> convertBoard(const std::string &fen);
-
     static double convertBoardLabel(const std::string &label);
 
-private:
+    private:
     static std::string getFenBoard(const std::string &fen);
-
-    static double convertFenPlacement(char c);
+    static int getPieceIndex(char c);
 };
