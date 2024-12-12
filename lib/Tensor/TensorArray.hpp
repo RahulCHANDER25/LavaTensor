@@ -109,6 +109,8 @@ class TensorArray {
      */
     void dispRaw();
 
+    size_t argmax();
+
     /**
      *  @brief Perform a matrix multiplication between `this` and @param oth.
      *

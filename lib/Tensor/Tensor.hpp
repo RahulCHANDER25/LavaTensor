@@ -44,7 +44,8 @@ class Tensor {
         _tensor.dispRaw();
     }
 
-    Tensor matmul(Tensor &oth);
+    size_t argmax();
+    Tensor matmul(Tensor &oth); // Need this
     Tensor sum();
 
     Tensor &operator=(const Tensor<T> &oth);

@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <format>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -154,6 +155,12 @@ lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T
         newTensor[i] = func(this->operator[](i), k);
     }
     return newTensor;
+}
+
+template <typename T>
+size_t lava::TensorArray<T>::argmax()
+{
+    return std::distance(_datas.begin(), std::max_element(_datas.begin(), _datas.end()));
 }
 
 template <typename T>
