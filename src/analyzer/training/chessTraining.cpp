@@ -20,6 +20,7 @@ void lava::train::chessTrain(
         auto out = net.forward(input);
 
         out.dispRaw();
+        std::cout << out.argmax() << std::endl;
         out.backward();
 
         // break;

@@ -37,6 +37,7 @@ public:
         _tensor.dispRaw();
     }
 
+    size_t argmax();
     Tensor matmul(Tensor &oth); // Need this
     Tensor sum();
 

@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <format>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -41,15 +42,15 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
         _strides.push_back(getStride(k, _shape));
     }
     if (type == InitType::RANDOM) {
-        // std::random_device rd;
-        // std::mt19937 rng{rd()};
-        // std::uniform_real_distribution<double> udist( // He Weight Initialization
-            // -(6.0 / sqrt((double) _shape[0])),
-            // (6.0 / sqrt((double) _shape[0]))
-        // );
+        std::random_device rd;
+        std::mt19937 rng{rd()};
+        std::uniform_real_distribution<double> udist( // He Weight Initialization
+            -(6.0 / sqrt((double) _shape[0])),
+            (6.0 / sqrt((double) _shape[0]))
+        );
 
         for (size_t i = 0; i < size; i++) {
-            _datas.push_back(random() % 2);
+            _datas.push_back(udist(rng));
         }
     }
     if (type == InitType::ZERO) {
@@ -149,6 +150,12 @@ lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T
         newTensor[i] = func(this->operator[](i), k);
     }
     return newTensor;
+}
+
+template <typename T>
+size_t lava::TensorArray<T>::argmax()
+{
+    return std::distance(_datas.begin(), std::max_element(_datas.begin(), _datas.end()));
 }
 
 template <typename T>
