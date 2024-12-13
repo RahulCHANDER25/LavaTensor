@@ -6,4 +6,3 @@ compile_commands.json
 venv/
 *.nn
 *.txt
-test.sh
