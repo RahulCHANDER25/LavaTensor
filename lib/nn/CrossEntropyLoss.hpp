@@ -63,32 +63,6 @@ class CrossEntropyLoss : public Module<T> {
         return loss;
     }
 
-    // Tensor<T> &backward(Tensor<T> &gradOutput) override
-    // {
-    //     auto &gradData = gradOutput.tensor().datas();
-    //     const auto &inputData = _lastInput.tensor().datas();
-    //     const auto &targetData = _lastTarget.tensor().datas();
-
-    //     T maxVal = inputData[0];
-    //     for (size_t i = 1; i < inputData.size(); ++i) {
-    //         maxVal = std::max(maxVal, inputData[i]);
-    //     }
-
-    //     T sum = 0;
-    //     std::vector<T> softmax(inputData.size());
-    //     for (size_t i = 0; i < inputData.size(); ++i) {
-    //         softmax[i] = std::exp(inputData[i] - maxVal);
-    //         sum += softmax[i];
-    //     }
-
-    //     for (size_t i = 0; i < gradData.size(); ++i) {
-    //         softmax[i] /= sum;
-    //         gradData[i] = softmax[i] - targetData[i];
-    //     }
-
-    //     return gradOutput;
-    // }
-
     private:
     Tensor<T> _lastInput;
     Tensor<T> _lastTarget;

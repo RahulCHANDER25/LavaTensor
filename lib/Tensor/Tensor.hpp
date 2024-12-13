@@ -112,6 +112,11 @@ class Tensor {
         return _gradNode;
     }
 
+    void setGradNode(std::shared_ptr<GradNode<T>> gradNode)
+    {
+        _gradNode = gradNode;
+    }
+
     T operator()(std::initializer_list<int> indexes) const; // TODO: Changing to variadic arguments
     T &operator()(std::initializer_list<int> indexes);
 

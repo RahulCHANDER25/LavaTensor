@@ -8,43 +8,34 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include "../Tensor/Tensor.hpp"
 #include "Module.hpp"
+#include "Tensor/autograd/ReLUBackward.hpp"
 
 namespace lava::nn {
 
 template <typename T>
 class ReLU : public Module<T> {
     public:
-    ReLU() : _lastInput({1}) {}
+    ReLU() = default;
+
+    ~ReLU() override = default;
 
     Tensor<T> forward(Tensor<T> &input) override
     {
-        _lastInput = input;
-        const auto &inputData = input.tensor().datas();
-        Tensor<T> output({static_cast<int>(inputData.size())});
-        auto &outputData = output.tensor().datas();
+        Tensor<T> output({static_cast<int>(input.datas().size())});
 
         // ReLU forward: max(0, x)
-        for (size_t i = 0; i < inputData.size(); ++i) {
-            outputData[i] = std::max(static_cast<T>(0), inputData[i]);
+        for (size_t i = 0; i < input.datas().size(); ++i) {
+            output[i] = std::max(static_cast<T>(0), input[i]);
         }
+
+        auto gradNode = std::make_shared<ReLUBackward<T>>(input);
+        output.setGradNode(gradNode);
+
         return output;
     }
-
-    // Tensor<T> &backward(Tensor<T> &gradOutput) override
-    // {
-    //     const auto &inputData = _lastInput.tensor().datas();
-    //     auto &gradData = gradOutput.tensor().datas();
-    //     // ReLU backward: gradient is 1 if input > 0, 0 otherwise
-    //     for (size_t i = 0; i < gradData.size(); ++i) {
-    //         gradData[i] = inputData[i] > 0 ? gradData[i] : 0;
-    //     }
-    //     return gradOutput;
-    // }
-
-    private:
-    Tensor<T> _lastInput; // As a ReLU Backward
 };
 
 } // namespace lava::nn

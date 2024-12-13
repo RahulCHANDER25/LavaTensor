@@ -32,16 +32,17 @@ public:
     {
         // For A: grad_A = grad_C × B^T
         if (this->_nextGrads[0]) {
-            auto bTransposed = _tensorBCpy;
-            bTransposed.transposed();
-            this->_nextGrads[0]->backward(grad.matmul(bTransposed));
+            _tensorBCpy.transposed();
+            this->_nextGrads[0]->backward(grad.matmul(_tensorBCpy));
         }
 
         // For B: grad_B = A^T × grad_C
         if (this->_nextGrads[1]) {
-            auto aTransposed = _tensorACpy;
-            aTransposed.transposed();
-            this->_nextGrads[1]->backward(aTransposed.matmul(grad));
+            _tensorACpy.transposed();
+            if (grad.shape().size() == 1) { // If tensor1 is a column matrix to match shape
+                grad.unsqueezed();
+            }
+            this->_nextGrads[1]->backward(_tensorACpy.matmul(grad));
         }
     }
 

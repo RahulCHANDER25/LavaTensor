@@ -61,15 +61,26 @@ lava::Tensor<T> lava::Tensor<T>::matmul(Tensor &oth)
         return Tensor(result, false);
     }
 
-    bool isUnsqueezed = false;
-    if (this->_tensor.shape().size() == 1) {
-        isUnsqueezed = true;
-        _tensor.unsqueezed();
+    bool isUnsqueezedThis = false;
+    bool isUnsqueezedOth = false;
+    if (this->_tensor.shape().size() == 1) { // Raw Vector
+        isUnsqueezedThis = true;
+        _tensor.unsqueezed(); // Becomes a Matrix (1xM)
     }
+    if (oth.shape().size() == 1) { // Shape: (N)
+        isUnsqueezedOth = true;
+        oth.tensor().unsqueezed(1); // Shape (Nx1)
+    }
+
     auto gradNode = std::make_shared<MMBackward<T>>(*this, oth);
 
-    if (isUnsqueezed) {
+    if (isUnsqueezedThis) {
         _tensor.removeDim();
+        result.removeDim();
+    }
+    if (isUnsqueezedOth) {
+        oth._tensor.removeDim(1);
+        result.removeDim(1);
     }
     return createWithGrad(result, gradNode);
 }

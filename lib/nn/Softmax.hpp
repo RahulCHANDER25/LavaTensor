@@ -18,6 +18,14 @@ class Softmax : public Module<T> {
     public:
     Softmax() : _lastOutput({1}) {}
 
+    // Implement softmax the call it inside CrossEntropy !
+    // Tensor<T> softmax(Tensor<T> &input)
+    // {
+    //     for (size_t i = 0; i < input.datas().size(); i++) {
+
+    //     }
+    // }
+
     Tensor<T> forward(Tensor<T> &input) override
     {
         const auto &inputData = input.tensor().datas();
@@ -44,12 +52,6 @@ class Softmax : public Module<T> {
 
         return _lastOutput;
     }
-
-    // Tensor<T> &backward(Tensor<T> &gradOutput) override
-    // {
-    //     // When used with CrossEntropyLoss, the gradient is already correct
-    //     return gradOutput;
-    // }
 
     private:
     Tensor<T> _lastOutput;

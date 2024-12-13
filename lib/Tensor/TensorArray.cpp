@@ -194,20 +194,24 @@ lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
 template <typename T>
 lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DIM Tensors are supported
 {
-    if (oth.shape().size() == 1 && _shape.size() == 1) {
-        throw std::logic_error("[ERR] Scalar Product not supported yet");
-    }
-    bool isUnsqueezed = false;
+    bool isUnsqueezedThis = false;
+    bool isUnsqueezedOth = false;
     if (_shape.size() == 1) {
-        isUnsqueezed = true;
+        isUnsqueezedThis = true;
         unsqueezed();
+    }
+    if (oth._shape.size() == 1) {
+        oth.unsqueezed(1);
     }
     if (oth._shape.size() != _shape.size()) {
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
     }
     if (_shape[1] != oth._shape[0]) {
+        std::cout << _shape[1] << " " << oth._shape[0] << std::endl;
         throw std::logic_error("Incorrect dimension for the matrix multiplication.");
     }
+
+    // matmul operation
     TensorArray<T> newTensor({_shape[0], oth._shape[1]}, TensorArray::InitType::ZERO);
 
     for (int i = 0; i < _shape[0]; i++) {
@@ -217,8 +221,12 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
             }
         }
     }
-    if (isUnsqueezed) {
+
+    if (isUnsqueezedThis) {
         removeDim();
+    }
+    if (isUnsqueezedOth) {
+        oth.removeDim(1);
     }
     return newTensor;
 }

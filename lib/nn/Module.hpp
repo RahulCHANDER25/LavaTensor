@@ -18,7 +18,7 @@ class Module {
 
     virtual Tensor<T> forward(Tensor<T> &input) = 0;
 
-    Tensor<T> operator()(const Tensor<T> &input)
+    Tensor<T> operator()(Tensor<T> &input)
     {
         return forward(input);
     }
