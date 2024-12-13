@@ -8,32 +8,20 @@
 #pragma once
 
 #include <cmath>
-#include "../Tensor/Tensor.hpp"
 #include "Module.hpp"
+#include "Tensor/Tensor.hpp"
+#include "Tensor/autograd/CrossEntropyLossBackward.hpp"
 
 namespace lava::nn {
 
 template <typename T>
-class CrossEntropyLoss : public Module<T> {
+class CrossEntropyLoss {
     public:
-    CrossEntropyLoss() : _lastInput({1}), _lastTarget({1}) {}
-
-    Tensor<T> forward(Tensor<T> &input) override
-    {
-        (void)input;
-        throw std::runtime_error("CrossEntropyLoss requires a target index. Use forward(input, targetIndex) instead.");
-    }
+    CrossEntropyLoss() = default;
 
     // Our specialized forward method for loss computation
-    T forward(Tensor<T> &input, size_t targetIndex)
+    Tensor<T> forward(Tensor<T> &input, size_t targetIndex)
     {
-        _lastInput = input;
-
-        _lastTarget = Tensor<T>({static_cast<int>(input.tensor().datas().size())});
-        auto &targetData = _lastTarget.tensor().datas();
-        std::fill(targetData.begin(), targetData.end(), 0);
-        targetData[targetIndex] = 1;
-
         const T epsilon = 1e-7;
         const auto &inputData = input.tensor().datas();
 
@@ -45,27 +33,26 @@ class CrossEntropyLoss : public Module<T> {
 
         // Compute softmax and cross entropy loss
         T sum = 0;
-        std::vector<T> softmax(inputData.size());
+        std::vector<T> ce(inputData.size());
         for (size_t i = 0; i < inputData.size(); ++i) {
-            softmax[i] = std::exp(inputData[i] - maxVal);
-            sum += softmax[i];
+            ce[i] = std::exp(inputData[i] - maxVal);
+            sum += ce[i];
         }
 
         // Normalize and compute loss
-        T loss = 0;
-        for (size_t i = 0; i < softmax.size(); ++i) {
-            softmax[i] /= sum;
+        Tensor<T> output({1}, false);
+        for (size_t i = 0; i < ce.size(); ++i) {
+            ce[i] /= sum;
             if (i == targetIndex) {
-                loss = -std::log(std::max(softmax[i], epsilon));
+                output[0] = -std::log(std::max(ce[i], epsilon));
             }
         }
 
-        return loss;
-    }
+        auto gradNode = std::make_shared<CrossEntropyLossBackward<T>>(input, targetIndex);
+        output.setGradNode(gradNode);
 
-    private:
-    Tensor<T> _lastInput;
-    Tensor<T> _lastTarget;
+        return output;
+    }
 };
 
 } // namespace lava::nn

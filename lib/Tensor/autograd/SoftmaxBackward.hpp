@@ -17,11 +17,14 @@ namespace lava {
 template <typename T>
 class SoftmaxBackward : public GradNode<T> {
     public:
-    SoftmaxBackward(Tensor<T> &input) : _res(input.tensor()) {}
+    SoftmaxBackward(Tensor<T> &input) : _res(input.tensor())
+    {
+        this->_nextGrads.push_back(input.gradNode());
+    }
 
     ~SoftmaxBackward() override = default;
 
-    void backward(TensorArray<T> grad) override
+    void backward(TensorArray<T> /*grad*/) override
     {
         throw std::runtime_error("Not implemented");
     }

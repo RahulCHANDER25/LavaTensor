@@ -121,28 +121,28 @@ void chessTrain(
 
                 // Computing loss
                 auto loss = criterion.forward(output, labelIndex);
-                // loss.backward() // here
+                loss.backward();
 
                 // Adding to the loss log with the value of the loss function
-                batchLoss += loss;
+                batchLoss += loss[0];
                 if (predictedClass == labelIndex) {
                     correct++;
                 }
 
                 // ---- Normally it should stop here ----
 
-                TensorArray<double> gradArray({static_cast<int>(outputData.size())}, {1});
-                std::fill(gradArray.datas().begin(), gradArray.datas().end(), 0.0);
-                Tensor<double> gradOutput(gradArray);
-                // gradOutput = criterion.backward(gradOutput);
+                // TensorArray<double> gradArray({static_cast<int>(outputData.size())}, {1});
+                // std::fill(gradArray.datas().begin(), gradArray.datas().end(), 0.0);
+                // Tensor<double> gradOutput(gradArray);
+                // // gradOutput = criterion.backward(gradOutput);
 
-                auto &gradData = gradOutput.tensor().datas();
-                for (auto &grad : gradData) {
-                    grad /= batchSize;
-                    if (std::isnan(grad) || std::isinf(grad)) {
-                        grad = 0.0;
-                    }
-                }
+                // auto &gradData = gradOutput.tensor().datas();
+                // for (auto &grad : gradData) {
+                //     grad /= batchSize;
+                //     if (std::isnan(grad) || std::isinf(grad)) {
+                //         grad = 0.0;
+                //     }
+                // }
 
                 // net.backward(gradOutput);
             }
