@@ -21,11 +21,11 @@
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
 {
-    std::cout << "Datas:\n";
-    for (const auto &elem : _datas) {
-        std::cout << elem << " ";
-    }
-    std::cout << std::endl;
+    //std::cout << "Datas:\n";
+    //for (const auto &elem : _datas) {
+    //    std::cout << elem << " ";
+    //}
+    //std::cout << std::endl;
 }
 
 template <typename T>

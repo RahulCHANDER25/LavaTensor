@@ -35,7 +35,7 @@ class NetworkGenerator {
         header.version = VERSION;
         header.archHash = computeArchHash(config);
         header.numLayers =
-            config.architecture().hiddenLayers * 2 + 2; // Linear + ReLU for each hidden layer + output + softmax
+            config.architecture().hiddenLayers * 2 + 1; // Linear + ReLU for each hidden layer + output + softmax
         std::memset(header.reserved, 0, sizeof(header.reserved));
 
         file.write(reinterpret_cast<const char *>(&header), sizeof(header));
@@ -85,7 +85,7 @@ class NetworkGenerator {
         }
 
         layers.push_back(std::make_shared<nn::Linear<double>>(prevSize, arch.outputSize));
-        layers.push_back(std::make_shared<nn::Softmax<double>>());
+        //layers.push_back(std::make_shared<nn::Softmax<double>>());
 
         initializeWeights(layers, init);
         return layers;
