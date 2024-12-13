@@ -8,15 +8,16 @@
 #pragma once
 
 #include <cmath>
-#include "../Tensor/Tensor.hpp"
 #include "Module.hpp"
+#include "Tensor/Tensor.hpp"
+#include "Tensor/autograd/SoftmaxBackward.hpp"
 
 namespace lava::nn {
 
 template <typename T>
 class Softmax : public Module<T> {
     public:
-    Softmax() : _lastOutput({1}) {}
+    Softmax() = default;
 
     // Implement softmax the call it inside CrossEntropy !
     // Tensor<T> softmax(Tensor<T> &input)
@@ -26,10 +27,10 @@ class Softmax : public Module<T> {
     //     }
     // }
 
-    Tensor<T> forward(Tensor<T> &input) override
+    Tensor<T> softmax(Tensor<T> &input)
     {
         const auto &inputData = input.tensor().datas();
-        _lastOutput = Tensor<T>({static_cast<int>(inputData.size())});
+        auto output = Tensor<T>({static_cast<int>(inputData.size())});
 
         // Find max for numerical stability
         T maxVal = inputData[0];
@@ -39,7 +40,7 @@ class Softmax : public Module<T> {
 
         // Compute exp(x - max) and sum
         T sum = 0;
-        auto &outputData = _lastOutput.tensor().datas();
+        auto &outputData = output.tensor().datas();
         for (size_t i = 0; i < inputData.size(); ++i) {
             outputData[i] = std::exp(inputData[i] - maxVal);
             sum += outputData[i];
@@ -50,11 +51,18 @@ class Softmax : public Module<T> {
             outputData[i] /= sum;
         }
 
-        return _lastOutput;
+        return output;
     }
 
-    private:
-    Tensor<T> _lastOutput;
+    Tensor<T> forward(Tensor<T> &input) override
+    {
+        auto output = softmax(input);
+
+        auto gradNode = std::make_shared<SoftmaxBackward<T>>(input);
+        output.setGradNode(gradNode);
+
+        return output;
+    }
 };
 
 } // namespace lava::nn
