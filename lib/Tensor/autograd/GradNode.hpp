@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <vector>
 #include "Tensor/TensorArray.hpp"
@@ -30,6 +31,10 @@ public:
     {
         _nextGrads.push_back(nextNode);
     }
+
+    std::vector<std::shared_ptr<GradNode<T>>> &getNextNodes() { return _nextGrads; }
+
+    virtual void auth() { std::cout << "I am gradnode\n"; }
 
 protected:
     std::vector<std::shared_ptr<GradNode<T>>> _nextGrads;

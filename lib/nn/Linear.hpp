@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
 #include "Module.hpp"
 #include "Tensor/Tensor.hpp"
 

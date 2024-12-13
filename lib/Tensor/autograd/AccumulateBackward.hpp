@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <iostream>
 #include "Tensor/Tensor.hpp"
 #include "Tensor/TensorArray.hpp"
 #include "Tensor/autograd/GradNode.hpp"
@@ -26,13 +27,18 @@ public:
 
     void backward(TensorArray<T> grad) override
     {
+        std::cout << "Accumulate: ";
+        grad.dispRaw();
         _tensor.grad() += grad;
+        _tensor.grad().dispRaw();
     }
 
     void backward() override
     {
         _tensor.grad() += 1;
     }
+
+    virtual void auth() override { std::cout << "I am Accumulate\n"; }
 
 private:
     Tensor<T> &_tensor;

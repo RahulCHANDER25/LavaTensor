@@ -8,6 +8,8 @@
 #pragma once
 
 #include <memory>
+#include <iostream>
+
 #include "Tensor/Tensor.hpp"
 #include "nn/Module.hpp"
 #include <initializer_list>

@@ -23,7 +23,7 @@ lava::Tensor<T>::Tensor(std::initializer_list<int> shape) : _tensor(shape), _gra
 }
 
 template <typename T>
-lava::Tensor<T>::Tensor(const Tensor<T> &tensor) : _tensor(tensor._tensor), _grad(tensor._grad)
+lava::Tensor<T>::Tensor(const Tensor<T> &tensor) : _tensor(tensor._tensor), _grad(tensor._grad), _gradNode(tensor._gradNode)
 {
 }
 
@@ -105,6 +105,7 @@ lava::Tensor<T> &lava::Tensor<T>::operator=(const lava::Tensor<T> &oth)
 {
     this->_tensor = oth._tensor;
     this->_grad = oth._grad;
+    this->_gradNode = oth._gradNode;
     return *this;
 }
 
@@ -113,6 +114,7 @@ lava::Tensor<T> &lava::Tensor<T>::operator=(lava::Tensor<T> &&oth) noexcept
 {
     this->_tensor = std::move(oth._tensor);
     this->_grad = std::move(oth._grad);
+    this->_gradNode = std::move(oth._gradNode);
     return *this;
 }
 

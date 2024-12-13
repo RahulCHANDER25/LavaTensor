@@ -117,7 +117,6 @@ void chessTrain(
 
                 size_t labelIndex = getLabelIndex(board.expectedOutput);
                 size_t predictedClass = output.argmax();
-                const auto &outputData = output.tensor().datas();
 
                 // Computing loss
                 auto loss = criterion.forward(output, labelIndex);
@@ -128,23 +127,6 @@ void chessTrain(
                 if (predictedClass == labelIndex) {
                     correct++;
                 }
-
-                // ---- Normally it should stop here ----
-
-                // TensorArray<double> gradArray({static_cast<int>(outputData.size())}, {1});
-                // std::fill(gradArray.datas().begin(), gradArray.datas().end(), 0.0);
-                // Tensor<double> gradOutput(gradArray);
-                // // gradOutput = criterion.backward(gradOutput);
-
-                // auto &gradData = gradOutput.tensor().datas();
-                // for (auto &grad : gradData) {
-                //     grad /= batchSize;
-                //     if (std::isnan(grad) || std::isinf(grad)) {
-                //         grad = 0.0;
-                //     }
-                // }
-
-                // net.backward(gradOutput);
             }
 
             optimizer.step();
