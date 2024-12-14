@@ -99,7 +99,7 @@ class NetworkConfig {
             uint32_t archSize;
             uint32_t initSize;
             uint32_t lrSchedulerSize;
-        } header;
+        } header{};
 
         file.read(reinterpret_cast<char *>(&header), sizeof(ConfigHeader));
 
@@ -114,12 +114,12 @@ class NetworkConfig {
         file.read(reinterpret_cast<char *>(&config._architecture.inputSize), sizeof(uint32_t));
         file.read(reinterpret_cast<char *>(&config._architecture.outputSize), sizeof(uint32_t));
         file.read(reinterpret_cast<char *>(&config._architecture.hiddenLayers), sizeof(uint32_t));
-        uint32_t numSizes;
+        uint32_t numSizes = 0;
         file.read(reinterpret_cast<char *>(&numSizes), sizeof(uint32_t));
 
         config._architecture.hiddenSizes.resize(numSizes);
         for (uint32_t i = 0; i < numSizes; i++) {
-            uint32_t size;
+            uint32_t size = 0;
             file.read(reinterpret_cast<char *>(&size), sizeof(uint32_t));
             config._architecture.hiddenSizes[i] = size;
         }
@@ -129,7 +129,7 @@ class NetworkConfig {
         file.read(reinterpret_cast<char *>(&config._initialization.biasInit), sizeof(BiasInit));
 
         // Read learning rate scheduler
-        uint32_t typeLen;
+        uint32_t typeLen = 0;
         file.read(reinterpret_cast<char *>(&typeLen), sizeof(uint32_t));
         std::vector<char> typeBuffer(typeLen + 1, '\0');
         file.read(typeBuffer.data(), typeLen);

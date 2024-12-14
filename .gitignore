@@ -9,3 +9,4 @@ venv/
 best_network.conf
 *.db
 *.json
+*.png

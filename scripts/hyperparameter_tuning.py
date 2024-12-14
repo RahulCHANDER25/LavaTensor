@@ -10,6 +10,9 @@ import logging
 import datetime
 import sys
 
+N_TRIALS = 100
+EPOCHS = 50
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(message)s',
@@ -22,32 +25,31 @@ def create_network_config(trial: optuna.Trial, base_config_path: str, output_pat
     config = configparser.ConfigParser()
     config.read(base_config_path)
     params_for_logging = {}
-    
+
     # Hyperparameters to tune
     params_for_logging['learning_rate'] = trial.suggest_float('learning_rate', 1e-4, 1e-1, log=True)
-    
+
     # Batch size as multiple of 16 (from 32 to 256)
     batch_size_multiplier = trial.suggest_int('batch_size_multiplier', 2, 16)  # 2*16=32 to 16*16=256
     params_for_logging['batch_size'] = batch_size_multiplier * 16
-    
+
     params_for_logging['dropout'] = trial.suggest_float('dropout', 0.0, 0.5)
-    params_for_logging['decay_rate'] = trial.suggest_float('decay_rate', 0.8, 0.99)
+    params_for_logging['decay_rate'] = trial.suggest_float('decay_rate', 0.5, 0.99)
     params_for_logging['decay_steps'] = trial.suggest_int('decay_steps', 1, 10)
     params_for_logging['min_lr'] = trial.suggest_float('min_lr', 1e-5, 1e-3, log=True)
-    
+
     # Training parameters
-    params_for_logging['epochs'] = 1
+    params_for_logging['epochs'] = EPOCHS
     # Samples per epoch as multiple of batch size
     samples_multiplier = trial.suggest_int('samples_per_epoch_multiplier', 8, 64)  # 8*batch_size to 64*batch_size
     params_for_logging['samples_per_epoch'] = samples_multiplier * params_for_logging['batch_size']
-    
-    # Update config with numeric parameters
+
     config['hyperparameters']['learning_rate'] = str(params_for_logging['learning_rate'])
     config['hyperparameters']['batch_size'] = str(params_for_logging['batch_size'])
     config['hyperparameters']['dropout'] = str(params_for_logging['dropout'])
     config['hyperparameters']['epochs'] = str(params_for_logging['epochs'])
     config['hyperparameters']['samples_per_epoch'] = str(params_for_logging['samples_per_epoch'])
-    
+
     config['lr_scheduler']['type'] = "exponential"
     config['lr_scheduler']['decay_rate'] = str(params_for_logging['decay_rate'])
     config['lr_scheduler']['decay_steps'] = str(params_for_logging['decay_steps'])
@@ -59,7 +61,7 @@ def create_network_config(trial: optuna.Trial, base_config_path: str, output_pat
 
     # Calculate valid power of 2 sizes (all greater than output size 6)
     min_power = 3  # 2^3 = 8 (first power of 2 > 6)
-    max_power = 10  # 2^10 = 1024
+    max_power = 12  # 2^12 = 4096
     valid_sizes = [2**i for i in range(min_power, max_power + 1)]
 
 
@@ -302,7 +304,7 @@ def main():
     logger.info(f"💾 Results will be saved in: models/")
     logger.info(f"{'─'*80}\n")
 
-    n_trials = 1
+    n_trials = N_TRIALS
     try:
         study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
     except KeyboardInterrupt:

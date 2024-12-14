@@ -88,8 +88,8 @@ void chessTrain(
     nn::SGD<double> optimizer(sequential->layers(), config.learningRate);
 
     // Create indices for the entire dataset
-    std::vector<size_t> all_indices(datas.size());
-    std::iota(all_indices.begin(), all_indices.end(), 0);
+    std::vector<size_t> allIndices(datas.size());
+    std::iota(allIndices.begin(), allIndices.end(), 0);
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -112,10 +112,10 @@ void chessTrain(
         std::atomic<size_t> correct{0};
 
         // Standard shuffle without execution policy
-        std::shuffle(all_indices.begin(), all_indices.end(), gen);
+        std::shuffle(allIndices.begin(), allIndices.end(), gen);
 
         // Create epoch indices (subset of shuffled indices)
-        std::vector<size_t> epochIndices(all_indices.begin(), all_indices.begin() + samplesPerEpoch);
+        std::vector<size_t> epochIndices(allIndices.begin(), allIndices.begin() + samplesPerEpoch);
 
         // Process batches
         for (size_t i = 0; i < samplesPerEpoch; i += config.batchSize) {
