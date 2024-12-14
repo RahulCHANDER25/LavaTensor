@@ -8,6 +8,8 @@
 #pragma once
 
 #include <memory>
+#include <iostream>
+
 #include "Tensor/Tensor.hpp"
 #include "nn/Module.hpp"
 #include <initializer_list>
@@ -15,25 +17,35 @@
 namespace lava::nn {
 
 template <typename T>
-class Sequential : public Module<T> { // Careful maybe again template specification on types
-public:
-    Sequential(std::initializer_list<std::shared_ptr<Module<T>>> modules):
-        _modules(modules)
-    {}
+class Sequential : public Module<T> {
+    public:
+    Sequential(std::initializer_list<std::shared_ptr<Module<T>>> modules) : _modules(modules) {}
+
+    Sequential(const std::vector<std::shared_ptr<Module<T>>> &modules) : _modules(modules) {}
 
     ~Sequential() override = default;
 
     Tensor<T> forward(Tensor<T> &in) override
     {
         Tensor<T> out{in};
-        for (auto &mod: _modules) {
+        for (auto &mod : _modules) {
             out = mod->forward(out);
         }
-        return std::move(out);
+        return out;
     }
 
-private:
-    std::vector<std::shared_ptr<Module<T>>> _modules;
+    const std::vector<std::shared_ptr<Module<T>>> &layers() const
+    {
+        return _modules;
+    }
+
+    std::vector<std::shared_ptr<Module<T>>> &layers()
+    {
+        return _modules;
+    }
+
+    private:
+    std::vector<std::shared_ptr<Module<T>>> _modules; // Enhance this
 };
 
-}
+} // namespace lava::nn

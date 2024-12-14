@@ -23,7 +23,7 @@ lava::Tensor<T>::Tensor(std::initializer_list<int> shape) : _tensor(shape), _gra
 }
 
 template <typename T>
-lava::Tensor<T>::Tensor(const Tensor<T> &tensor) : _tensor(tensor._tensor), _grad(tensor._grad)
+lava::Tensor<T>::Tensor(const Tensor<T> &tensor) : _tensor(tensor._tensor), _grad(tensor._grad), _gradNode(tensor._gradNode)
 {
 }
 
@@ -61,15 +61,26 @@ lava::Tensor<T> lava::Tensor<T>::matmul(Tensor &oth)
         return Tensor(result, false);
     }
 
-    bool isUnsqueezed = false;
-    if (this->_tensor.shape().size() == 1) {
-        isUnsqueezed = true;
-        _tensor.unsqueezed();
+    bool isUnsqueezedThis = false;
+    bool isUnsqueezedOth = false;
+    if (this->_tensor.shape().size() == 1) { // Raw Vector
+        isUnsqueezedThis = true;
+        _tensor.unsqueezed(); // Becomes a Matrix (1xM)
     }
+    if (oth.shape().size() == 1) { // Shape: (N)
+        isUnsqueezedOth = true;
+        oth.tensor().unsqueezed(1); // Shape (Nx1)
+    }
+
     auto gradNode = std::make_shared<MMBackward<T>>(*this, oth);
 
-    if (isUnsqueezed) {
+    if (isUnsqueezedThis) {
         _tensor.removeDim();
+        result.removeDim();
+    }
+    if (isUnsqueezedOth) {
+        oth._tensor.removeDim(1);
+        result.removeDim(1);
     }
     return createWithGrad(result, gradNode);
 }
@@ -94,6 +105,7 @@ lava::Tensor<T> &lava::Tensor<T>::operator=(const lava::Tensor<T> &oth)
 {
     this->_tensor = oth._tensor;
     this->_grad = oth._grad;
+    this->_gradNode = oth._gradNode;
     return *this;
 }
 
@@ -102,6 +114,7 @@ lava::Tensor<T> &lava::Tensor<T>::operator=(lava::Tensor<T> &&oth) noexcept
 {
     this->_tensor = std::move(oth._tensor);
     this->_grad = std::move(oth._grad);
+    this->_gradNode = std::move(oth._gradNode);
     return *this;
 }
 

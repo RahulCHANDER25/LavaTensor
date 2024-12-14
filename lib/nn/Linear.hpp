@@ -7,25 +7,30 @@
 
 #pragma once
 
-#include "nn/Module.hpp"
+#include <cmath>
+#include <iostream>
+#include "Module.hpp"
+#include "Tensor/Tensor.hpp"
 
 namespace lava::nn {
 
 template <typename T>
-class Linear : public Module<T> { // Careful maybe again template specification on types
+class Linear : public Module<T> {
 public:
     Linear(int inFeatures, int outFeatures):
-    _weights({inFeatures, outFeatures}, true),
-    _biases({outFeatures, 1}, true)
-    {}
+        _weights({inFeatures, outFeatures}, true),
+        _biases({outFeatures}, true)
+    {
+    }
 
     ~Linear() override = default;
 
     Tensor<T> forward(Tensor<T> &x) override
     {
-        return x.matmul(_weights) + _biases;
+        return x.matmul(this->_weights) + _biases;
     }
 
+    // Only weights and biases as Tensor
     Tensor<T> _weights;
     Tensor<T> _biases;
 private:

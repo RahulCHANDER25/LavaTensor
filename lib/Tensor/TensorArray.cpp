@@ -21,11 +21,11 @@
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
 {
-    std::cout << "Datas:\n";
-    for (const auto &elem : _datas) {
-        std::cout << elem << " ";
-    }
-    std::cout << std::endl;
+    //std::cout << "Datas:\n";
+    //for (const auto &elem : _datas) {
+    //    std::cout << elem << " ";
+    //}
+    //std::cout << std::endl;
 }
 
 template <typename T>
@@ -43,14 +43,23 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
     }
     if (type == InitType::RANDOM) {
         std::random_device rd;
-        std::mt19937 rng{rd()};
-        std::uniform_real_distribution<double> udist( // He Weight Initialization
-            -(6.0 / sqrt((double) _shape[0])),
-            (6.0 / sqrt((double) _shape[0]))
-        );
+        std::mt19937 gen(rd());
 
-        for (size_t i = 0; i < size; i++) {
-            _datas.push_back(udist(rng));
+        if constexpr (std::is_floating_point_v<T>) {
+            // He initialization for floating point types
+            T stddev = static_cast<T>(std::sqrt(2.0 / _shape[0]));
+            std::normal_distribution<T> dist(0.0, stddev);
+            for (size_t i = 0; i < size; i++) {
+                _datas.push_back(dist(gen));
+            }
+        } else {
+            // For integer types, use a uniform distribution
+            // Scale based on input size similar to He init
+            int range = static_cast<int>(std::sqrt(6.0 / _shape[0]));
+            std::uniform_int_distribution<int> dist(-range, range);
+            for (size_t i = 0; i < size; i++) {
+                _datas.push_back(static_cast<T>(dist(gen)));
+            }
         }
     }
     if (type == InitType::ZERO) {
@@ -83,18 +92,14 @@ lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<T> &datas):
-    _shape(std::initializer_list<int>{(int) datas.size()}),
-    _strides(1),
-    _datas(datas)
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
+    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _datas(datas)
 {
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides):
-    _shape(shape),
-    _strides(strides),
-    _datas()
+lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides)
+    : _shape(shape), _strides(strides), _datas()
 {
     size_t size = 1;
 
@@ -161,7 +166,7 @@ size_t lava::TensorArray<T>::argmax()
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 {
-    if (dim > _shape.size()) {   
+    if (dim > _shape.size()) {
         throw std::logic_error("[ERR] Scalar Product not supported yet");
     }
     _shape.insert(_shape.begin() + dim, 1);
@@ -175,7 +180,7 @@ lava::TensorArray<T> &lava::TensorArray<T>::unsqueezed(size_t dim)
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
 {
-    if (dim > _shape.size()) {   
+    if (dim > _shape.size()) {
         throw std::logic_error("[ERR] Scalar Product not supported yet");
     }
     _shape.erase(_shape.begin() + dim);
@@ -189,20 +194,24 @@ lava::TensorArray<T> &lava::TensorArray<T>::removeDim(size_t dim)
 template <typename T>
 lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DIM Tensors are supported
 {
-    if (oth.shape().size() == 1 && _shape.size() == 1) {
-        throw std::logic_error("[ERR] Scalar Product not supported yet");
-    }
-    bool isUnsqueezed = false;
+    bool isUnsqueezedThis = false;
+    bool isUnsqueezedOth = false;
     if (_shape.size() == 1) {
-        isUnsqueezed = true;
+        isUnsqueezedThis = true;
         unsqueezed();
+    }
+    if (oth._shape.size() == 1) {
+        oth.unsqueezed(1);
     }
     if (oth._shape.size() != _shape.size()) {
         throw std::logic_error("[ERR] Only 2 Dimensional Tensors are supported for matmul");
     }
     if (_shape[1] != oth._shape[0]) {
+        std::cout << _shape[1] << " " << oth._shape[0] << std::endl;
         throw std::logic_error("Incorrect dimension for the matrix multiplication.");
     }
+
+    // matmul operation
     TensorArray<T> newTensor({_shape[0], oth._shape[1]}, TensorArray::InitType::ZERO);
 
     for (int i = 0; i < _shape[0]; i++) {
@@ -212,8 +221,12 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
             }
         }
     }
-    if (isUnsqueezed) {
+
+    if (isUnsqueezedThis) {
         removeDim();
+    }
+    if (isUnsqueezedOth) {
+        oth.removeDim(1);
     }
     return newTensor;
 }
@@ -329,4 +342,3 @@ size_t lava::TensorArray<T>::getStride(size_t k, const std::vector<int> &shape)
     }
     return stride;
 }
-

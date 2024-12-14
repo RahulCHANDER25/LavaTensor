@@ -13,12 +13,15 @@ namespace lava::nn {
 
 template <typename T>
 class Module {
-public:
+    public:
     virtual ~Module() = default;
 
-    virtual Tensor<T> forward(Tensor<T> &/* input */) = 0;
+    virtual Tensor<T> forward(Tensor<T> &input) = 0;
 
-    // Eval mode function ==> Put all submodules to eval and tensors too
+    Tensor<T> operator()(Tensor<T> &input)
+    {
+        return forward(input);
+    }
 };
 
-}
+} // namespace lava::nn

@@ -30,6 +30,10 @@ class ChessboardParser {
         auto lines = FileHandler::readLines(filename);
 
         for (size_t lineNum = 0; lineNum < lines.size(); ++lineNum) {
+            if (lines[lineNum].empty() || lines[lineNum][0] == '#') {
+                continue;
+            }
+
             std::istringstream iss(lines[lineNum]);
             ChessboardData data;
 

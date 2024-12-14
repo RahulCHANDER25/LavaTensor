@@ -277,6 +277,11 @@ class TensorArray {
         return _datas;
     }
 
+    const std::vector<T> &datas() const
+    {
+        return _datas;
+    }
+
     private:
     // TODO: Checks of shape to be done !
 
