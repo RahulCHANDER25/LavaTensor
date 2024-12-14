@@ -1,0 +1,85 @@
+{
+  "best_accuracy": 51.17,
+  "best_params": {
+    "learning_rate": 0.010214962136071731,
+    "batch_size_multiplier": 5,
+    "dropout": 0.28481850661823976,
+    "decay_rate": 0.8874724743280968,
+    "decay_steps": 4,
+    "min_lr": 0.0001577481860135783,
+    "samples_per_epoch_multiplier": 8,
+    "n_hidden_layers": 3,
+    "hidden_size_0": 0,
+    "hidden_size_1": 0,
+    "hidden_size_2": 0
+  },
+  "n_trials": 1,
+  "optimization_history": [
+    {
+      "trial": 0,
+      "accuracy": 50.34,
+      "params": {
+        "learning_rate": 0.0004013233299366999,
+        "batch_size_multiplier": 13,
+        "dropout": 0.006451449129977693,
+        "decay_rate": 0.9718849199325581,
+        "decay_steps": 10,
+        "min_lr": 0.000930888963401837,
+        "n_hidden_layers": 3,
+        "hidden_size_0": 7,
+        "hidden_size_1": 3,
+        "hidden_size_2": 3
+      }
+    },
+    {
+      "trial": 2,
+      "accuracy": 48.88,
+      "params": {
+        "learning_rate": 0.0012056200929261025,
+        "batch_size_multiplier": 16,
+        "dropout": 0.2121506048088423,
+        "decay_rate": 0.8874029238330977,
+        "decay_steps": 6,
+        "min_lr": 1.8701129218928193e-05,
+        "samples_per_epoch_multiplier": 13,
+        "n_hidden_layers": 4,
+        "hidden_size_0": 2,
+        "hidden_size_1": 1,
+        "hidden_size_2": 1,
+        "hidden_size_3": 0
+      }
+    },
+    {
+      "trial": 4,
+      "accuracy": 51.17,
+      "params": {
+        "learning_rate": 0.010214962136071731,
+        "batch_size_multiplier": 5,
+        "dropout": 0.28481850661823976,
+        "decay_rate": 0.8874724743280968,
+        "decay_steps": 4,
+        "min_lr": 0.0001577481860135783,
+        "samples_per_epoch_multiplier": 8,
+        "n_hidden_layers": 3,
+        "hidden_size_0": 0,
+        "hidden_size_1": 0,
+        "hidden_size_2": 0
+      }
+    }
+  ],
+  "importance": {
+    "decay_rate": 0.24431350761230353,
+    "min_lr": 0.18635745737375523,
+    "learning_rate": 0.15643740759999425,
+    "hidden_size_0": 0.12949344085070108,
+    "n_hidden_layers": 0.08683444980071524,
+    "decay_steps": 0.07535119481488856,
+    "dropout": 0.06299052017550834,
+    "batch_size_multiplier": 0.05822202177213397
+  },
+  "system_info": {
+    "date": "2024-12-14 03:08:59.377290",
+    "python_version": "3.12.3 (main, Nov  6 2024, 18:32:19) [GCC 13.2.0]",
+    "optuna_version": "4.1.0"
+  }
+}

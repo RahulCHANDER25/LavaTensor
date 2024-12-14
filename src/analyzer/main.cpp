@@ -73,6 +73,15 @@ int main(int argc, char *argv[])
             auto networkConfig = lava::NetworkConfig::fromFile("examples/basic_network.conf");
             config.learningRate = networkConfig.hyperparameters().learningRate;
             config.batchSize = networkConfig.hyperparameters().batchSize;
+            config.epochs = networkConfig.hyperparameters().epochs;
+            config.samplesPerEpoch = networkConfig.hyperparameters().samplesPerEpoch;
+
+            // Load learning rate scheduler configuration
+            const auto& lrScheduler = networkConfig.lrScheduler();
+            config.schedulerType = lrScheduler.type;
+            config.decayRate = lrScheduler.decayRate;
+            config.decaySteps = lrScheduler.decaySteps;
+            config.minLearningRate = lrScheduler.minLR;
 
             lava::train::chessTrain(*model, boards, config);
         }

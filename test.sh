@@ -6,7 +6,7 @@ make re
 
 # Generate a neural network
 echo -e "\nGenerating neural network..."
-./my_torch_generator examples/basic_network.conf 1
+./my_torch_generator examples/best_network.conf 1
 
 # Train the network
 echo -e "\nTraining network..."

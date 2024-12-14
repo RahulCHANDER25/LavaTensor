@@ -72,6 +72,19 @@ class SGD {
         }
     }
 
+    void setLearningRate(T lr)
+    {
+        if (lr <= 0) {
+            throw std::runtime_error("Learning rate must be greater than 0");
+        }
+        _learningRate = lr;
+    }
+
+    T getLearningRate() const
+    {
+        return _learningRate;
+    }
+
     private:
     const std::vector<std::shared_ptr<Module<T>>> &_layers;
     T _learningRate;

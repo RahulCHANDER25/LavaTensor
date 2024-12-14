@@ -12,6 +12,9 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+#include <thread>
+#include <mutex>
+#include <future>
 
 #include "Tensor/TensorArray.hpp"
 #include "nn/CrossEntropyLoss.hpp"
@@ -36,14 +39,21 @@ size_t getLabelIndex(const std::string &labelStr)
 
 void trainSummary(const std::vector<ChessboardParser::ChessboardData> &datas, const TrainingConfig &config)
 {
-    std::cout << "\nStarting training with " << datas.size() << " samples" << std::endl;
+    std::cout << "\nStarting training with " << datas.size() << " total samples" << std::endl;
     std::cout << "Training Configuration:" << std::endl;
     std::cout << "----------------------" << std::endl;
-    std::cout << "Learning rate: " << config.learningRate << std::endl;
+    std::cout << "Initial learning rate: " << config.learningRate << std::endl;
     std::cout << "Batch size: " << config.batchSize << std::endl;
+    std::cout << "Samples per epoch: " << config.samplesPerEpoch << std::endl;
     std::cout << "Number of epochs: " << config.epochs << std::endl;
     std::cout << "Save file: " << (config.saveFile.empty() ? "none" : config.saveFile) << std::endl;
     std::cout << "Should save: " << (config.shouldSave ? "yes" : "no") << std::endl;
+    if (config.schedulerType != "none") {
+        std::cout << "Learning rate scheduler: " << config.schedulerType << std::endl;
+        std::cout << "Decay rate: " << config.decayRate << std::endl;
+        std::cout << "Decay steps: " << config.decaySteps << std::endl;
+        std::cout << "Minimum learning rate: " << config.minLearningRate << std::endl;
+    }
     std::cout << "----------------------" << std::endl;
 }
 
@@ -76,71 +86,99 @@ void chessTrain(
     if (!sequential) {
         throw std::runtime_error("Network must be Sequential");
     }
-    nn::SGD<double> optimizer(
-        sequential->layers(), config.learningRate
-    ); // Store parameters inside a module and put it inside optimizer
+    nn::SGD<double> optimizer(sequential->layers(), config.learningRate);
 
-    // Create shuffled indices for batching
-    std::vector<size_t> indices(datas.size());
-    std::iota(indices.begin(), indices.end(), 0);
+    // Create indices for the entire dataset
+    std::vector<size_t> all_indices(datas.size());
+    std::iota(all_indices.begin(), all_indices.end(), 0);
     std::random_device rd;
     std::mt19937 gen(rd());
 
     trainSummary(datas, config);
     networkSummary(sequential);
 
+    const unsigned int num_threads = std::thread::hardware_concurrency();
+    const size_t samples_per_epoch = std::min(config.samplesPerEpoch, datas.size());
+
     for (size_t epoch = 0; epoch < config.epochs; epoch++) {
+        // Update learning rate if scheduler is enabled
+        if (config.schedulerType == "exponential") {
+            double newLR = config.learningRate * std::pow(config.decayRate, static_cast<double>(epoch) / config.decaySteps);
+            newLR = std::max(newLR, config.minLearningRate);
+            optimizer.setLearningRate(newLR);
+        }
+
         double epochLoss = 0.0;
-        size_t correct = 0;
+        std::atomic<size_t> correct{0};
 
-        std::shuffle(indices.begin(), indices.end(), gen);
+        // Standard shuffle without execution policy
+        std::shuffle(all_indices.begin(), all_indices.end(), gen);
+        
+        // Create epoch indices (subset of shuffled indices)
+        std::vector<size_t> epoch_indices(all_indices.begin(), all_indices.begin() + samples_per_epoch);
 
-        for (size_t i = 0; i < indices.size(); i += config.batchSize) {
-            size_t batchSize = std::min(config.batchSize, indices.size() - i);
-            double batchLoss = 0.0;
+        // Process batches
+        for (size_t i = 0; i < samples_per_epoch; i += config.batchSize) {
+            size_t batchSize = std::min(config.batchSize, samples_per_epoch - i);
+            std::atomic<double> batchLoss{0.0};
             optimizer.zeroGrad();
 
-            for (size_t j = 0; j < batchSize; j++) {
-                // Input formatting
-                const auto &board = datas[indices[i + j]];
+            // Parallel processing of batch samples
+            std::vector<std::future<void>> futures;
+            size_t chunk_size = std::max(size_t(1), batchSize / num_threads);
+            
+            for (size_t start = 0; start < batchSize; start += chunk_size) {
+                size_t end = std::min(start + chunk_size, batchSize);
+                futures.push_back(std::async(std::launch::async, [&, start, end]() {
+                    double local_loss = 0.0;
+                    size_t local_correct = 0;
 
-                std::vector<int> inputShape = {1, static_cast<int>(board.boardData.size())};
-                std::vector<int> strides = {static_cast<int>(board.boardData.size()), 1};
-                std::vector<double> normalizedData = board.boardData;
+                    for (size_t j = start; j < end; j++) {
+                        const auto &board = datas[epoch_indices[i + j]];
 
-                lava::TensorArray<double> tensorArray(inputShape, strides);
-                tensorArray.datas() = normalizedData;
-                Tensor<double> input(tensorArray);
+                        std::vector<int> inputShape = {1, static_cast<int>(board.boardData.size())};
+                        std::vector<int> strides = {static_cast<int>(board.boardData.size()), 1};
+                        std::vector<double> normalizedData = board.boardData;
 
-                // Forward Pass
-                auto output = net.forward(input);
+                        lava::TensorArray<double> tensorArray(inputShape, strides);
+                        tensorArray.datas() = normalizedData;
+                        Tensor<double> input(tensorArray);
 
-                size_t labelIndex = getLabelIndex(board.expectedOutput);
-                size_t predictedClass = output.argmax();
+                        auto output = net.forward(input);
+                        size_t labelIndex = getLabelIndex(board.expectedOutput);
+                        size_t predictedClass = output.argmax();
 
-                // Computing loss
-                auto loss = criterion.forward(output, labelIndex);
-                loss.backward();
+                        auto loss = criterion.forward(output, labelIndex);
+                        loss.backward();
 
-                // Adding to the loss log with the value of the loss function
-                batchLoss += loss[0];
-                if (predictedClass == labelIndex) {
-                    correct++;
-                }
+                        local_loss += loss[0];
+                        if (predictedClass == labelIndex) {
+                            local_correct++;
+                        }
+                    }
+
+                    batchLoss += local_loss;
+                    correct += local_correct;
+                }));
+            }
+
+            // Wait for all threads to complete
+            for (auto &future : futures) {
+                future.wait();
             }
 
             optimizer.step();
-
-            epochLoss += batchLoss / batchSize; // Average loss for the batch
+            epochLoss += static_cast<double>(batchLoss) / batchSize;
         }
 
-        double accuracy = static_cast<double>(correct) / datas.size();
-        std::cout << "Epoch " << epoch + 1 << "/" << config.epochs << " - Loss: " << std::fixed << std::setprecision(4)
-                  << epochLoss * config.batchSize / datas.size() << " - Accuracy: " << std::fixed
-                  << std::setprecision(2) << accuracy * 100 << "%" << std::endl;
+        double accuracy = static_cast<double>(correct) / samples_per_epoch;
+        std::cout << "Epoch " << epoch + 1 << "/" << config.epochs 
+                  << " (" << samples_per_epoch << " samples) - Loss: " << std::fixed << std::setprecision(4)
+                  << epochLoss * config.batchSize / samples_per_epoch 
+                  << " - Accuracy: " << std::fixed << std::setprecision(2) << accuracy * 100 
+                  << "% - LR: " << std::scientific << std::setprecision(3) << optimizer.getLearningRate() << std::endl;
 
-        if (config.shouldSave && !config.saveFile.empty() && (epoch + 1) % 10 == 0) // Save every 10 epochs
-        {
+        if (config.shouldSave && !config.saveFile.empty() && (epoch + 1) % 10 == 0) {
             NetworkSaver::saveNetwork(
                 std::shared_ptr<nn::Sequential<double>>(sequential, [](nn::Sequential<double> *) {}), config.saveFile
             );

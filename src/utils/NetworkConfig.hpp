@@ -40,11 +40,21 @@ class NetworkConfig {
         size_t batchSize{};
         std::string activation;
         double dropout{};
+        size_t epochs{};
+        size_t samplesPerEpoch{};
     };
 
     struct Initialization {
         WeightInit weightInit;
         BiasInit biasInit;
+    };
+
+    struct LearningRateScheduler {
+        std::string type{"none"};
+        double initialLR{0.01};
+        double decayRate{0.95};
+        size_t decaySteps{100};
+        double minLR{0.0001};
     };
 
     static NetworkConfig fromFile(const std::string &filename)
@@ -93,10 +103,27 @@ class NetworkConfig {
         return _initialization;
     }
 
+    const LearningRateScheduler &lrScheduler() const
+    {
+        return _lrScheduler;
+    }
+
+    std::string getValue(const std::string &section, const std::string &key) const
+    {
+        if (section == "lr_scheduler") {
+            if (key == "type") return _lrScheduler.type;
+            if (key == "decay_rate") return std::to_string(_lrScheduler.decayRate);
+            if (key == "decay_steps") return std::to_string(_lrScheduler.decaySteps);
+            if (key == "min_lr") return std::to_string(_lrScheduler.minLR);
+        }
+        throw std::runtime_error("Invalid section or key: " + section + "." + key);
+    }
+
     private:
     Architecture _architecture;
     Hyperparameters _hyperparameters;
     Initialization _initialization{};
+    LearningRateScheduler _lrScheduler{};
 
     void _parseKeyValue(const std::string &section, const std::string &key, const std::string &value)
     {
@@ -106,6 +133,8 @@ class NetworkConfig {
             _parseHyperparameters(key, value);
         } else if (section == "initialization") {
             _parseInitialization(key, value);
+        } else if (section == "lr_scheduler") {
+            _parseLRScheduler(key, value);
         }
     }
 
@@ -136,6 +165,10 @@ class NetworkConfig {
             _hyperparameters.activation = value;
         } else if (key == "dropout") {
             _hyperparameters.dropout = std::stod(value);
+        } else if (key == "epochs") {
+            _hyperparameters.epochs = std::stoul(value);
+        } else if (key == "samples_per_epoch") {
+            _hyperparameters.samplesPerEpoch = std::stoul(value);
         }
     }
 
@@ -158,6 +191,21 @@ class NetworkConfig {
         }
     }
 
+    void _parseLRScheduler(const std::string &key, const std::string &value)
+    {
+        if (key == "type") {
+            _lrScheduler.type = value;
+        } else if (key == "initial_lr") {
+            _lrScheduler.initialLR = std::stod(value);
+        } else if (key == "decay_rate") {
+            _lrScheduler.decayRate = std::stod(value);
+        } else if (key == "decay_steps") {
+            _lrScheduler.decaySteps = std::stoul(value);
+        } else if (key == "min_lr") {
+            _lrScheduler.minLR = std::stod(value);
+        }
+    }
+
     void _validate() const
     {
         if (_architecture.inputSize == 0) {
@@ -177,6 +225,20 @@ class NetworkConfig {
         }
         if (_hyperparameters.dropout < 0 || _hyperparameters.dropout >= 1) {
             throw std::runtime_error("Dropout must be between 0 and 1");
+        }
+        
+        // Validate learning rate scheduler
+        if (_lrScheduler.type != "none" && _lrScheduler.type != "exponential") {
+            throw std::runtime_error("Invalid learning rate scheduler type");
+        }
+        if (_lrScheduler.decayRate <= 0 || _lrScheduler.decayRate > 1) {
+            throw std::runtime_error("Decay rate must be between 0 and 1");
+        }
+        if (_lrScheduler.decaySteps == 0) {
+            throw std::runtime_error("Decay steps must be greater than 0");
+        }
+        if (_lrScheduler.minLR < 0) {
+            throw std::runtime_error("Minimum learning rate must be non-negative");
         }
     }
 };
