@@ -7,3 +7,5 @@ venv/
 *.nn
 *.txt
 best_network.conf
+*.db
+*.json
