@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
             config.shouldSave = !args.saveFile.empty();
             config.saveFile = args.saveFile.empty() ? args.loadFile : args.saveFile;
 
-            auto networkConfig = lava::NetworkConfig::fromFile("examples/basic_network.conf");
+            auto networkConfig = lava::NetworkLoader::getLastLoadedConfig();
             config.learningRate = networkConfig.hyperparameters().learningRate;
             config.batchSize = networkConfig.hyperparameters().batchSize;
             config.epochs = networkConfig.hyperparameters().epochs;

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -88,6 +89,58 @@ class NetworkConfig {
         return config;
     }
 
+    static NetworkConfig fromBinaryFile(std::ifstream &file)
+    {
+        NetworkConfig config;
+
+        // Read config header
+        struct ConfigHeader {
+            uint32_t hyperparamsSize;
+            uint32_t archSize;
+            uint32_t initSize;
+            uint32_t lrSchedulerSize;
+        } header;
+
+        file.read(reinterpret_cast<char *>(&header), sizeof(ConfigHeader));
+
+        // Read hyperparameters
+        file.read(reinterpret_cast<char *>(&config._hyperparameters.learningRate), sizeof(double));
+        file.read(reinterpret_cast<char *>(&config._hyperparameters.batchSize), sizeof(uint32_t));
+        file.read(reinterpret_cast<char *>(&config._hyperparameters.dropout), sizeof(double));
+        file.read(reinterpret_cast<char *>(&config._hyperparameters.epochs), sizeof(uint32_t));
+        file.read(reinterpret_cast<char *>(&config._hyperparameters.samplesPerEpoch), sizeof(uint32_t));
+
+        // Read architecture
+        file.read(reinterpret_cast<char *>(&config._architecture.inputSize), sizeof(uint32_t));
+        file.read(reinterpret_cast<char *>(&config._architecture.outputSize), sizeof(uint32_t));
+        file.read(reinterpret_cast<char *>(&config._architecture.hiddenLayers), sizeof(uint32_t));
+        uint32_t numSizes;
+        file.read(reinterpret_cast<char *>(&numSizes), sizeof(uint32_t));
+
+        config._architecture.hiddenSizes.resize(numSizes);
+        for (uint32_t i = 0; i < numSizes; i++) {
+            uint32_t size;
+            file.read(reinterpret_cast<char *>(&size), sizeof(uint32_t));
+            config._architecture.hiddenSizes[i] = size;
+        }
+
+        // Read initialization
+        file.read(reinterpret_cast<char *>(&config._initialization.weightInit), sizeof(WeightInit));
+        file.read(reinterpret_cast<char *>(&config._initialization.biasInit), sizeof(BiasInit));
+
+        // Read learning rate scheduler
+        uint32_t typeLen;
+        file.read(reinterpret_cast<char *>(&typeLen), sizeof(uint32_t));
+        std::vector<char> typeBuffer(typeLen + 1, '\0');
+        file.read(typeBuffer.data(), typeLen);
+        config._lrScheduler.type = std::string(typeBuffer.data());
+        file.read(reinterpret_cast<char *>(&config._lrScheduler.decayRate), sizeof(double));
+        file.read(reinterpret_cast<char *>(&config._lrScheduler.decaySteps), sizeof(uint32_t));
+        file.read(reinterpret_cast<char *>(&config._lrScheduler.minLR), sizeof(double));
+
+        return config;
+    }
+
     const Architecture &architecture() const
     {
         return _architecture;
@@ -111,10 +164,18 @@ class NetworkConfig {
     std::string getValue(const std::string &section, const std::string &key) const
     {
         if (section == "lr_scheduler") {
-            if (key == "type") return _lrScheduler.type;
-            if (key == "decay_rate") return std::to_string(_lrScheduler.decayRate);
-            if (key == "decay_steps") return std::to_string(_lrScheduler.decaySteps);
-            if (key == "min_lr") return std::to_string(_lrScheduler.minLR);
+            if (key == "type") {
+                return _lrScheduler.type;
+            }
+            if (key == "decay_rate") {
+                return std::to_string(_lrScheduler.decayRate);
+            }
+            if (key == "decay_steps") {
+                return std::to_string(_lrScheduler.decaySteps);
+            }
+            if (key == "min_lr") {
+                return std::to_string(_lrScheduler.minLR);
+            }
         }
         throw std::runtime_error("Invalid section or key: " + section + "." + key);
     }
@@ -226,7 +287,7 @@ class NetworkConfig {
         if (_hyperparameters.dropout < 0 || _hyperparameters.dropout >= 1) {
             throw std::runtime_error("Dropout must be between 0 and 1");
         }
-        
+
         // Validate learning rate scheduler
         if (_lrScheduler.type != "none" && _lrScheduler.type != "exponential") {
             throw std::runtime_error("Invalid learning rate scheduler type");

@@ -8,13 +8,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <random>
 #include <thread>
-#include <mutex>
-#include <future>
 
 #include "Tensor/TensorArray.hpp"
 #include "nn/CrossEntropyLoss.hpp"
@@ -97,13 +96,14 @@ void chessTrain(
     trainSummary(datas, config);
     networkSummary(sequential);
 
-    const unsigned int num_threads = std::thread::hardware_concurrency();
-    const size_t samples_per_epoch = std::min(config.samplesPerEpoch, datas.size());
+    const unsigned int numThreads = std::thread::hardware_concurrency();
+    const size_t samplesPerEpoch = std::min(config.samplesPerEpoch, datas.size());
 
     for (size_t epoch = 0; epoch < config.epochs; epoch++) {
         // Update learning rate if scheduler is enabled
         if (config.schedulerType == "exponential") {
-            double newLR = config.learningRate * std::pow(config.decayRate, static_cast<double>(epoch) / config.decaySteps);
+            double newLR =
+                config.learningRate * std::pow(config.decayRate, static_cast<double>(epoch) / config.decaySteps);
             newLR = std::max(newLR, config.minLearningRate);
             optimizer.setLearningRate(newLR);
         }
@@ -113,28 +113,28 @@ void chessTrain(
 
         // Standard shuffle without execution policy
         std::shuffle(all_indices.begin(), all_indices.end(), gen);
-        
+
         // Create epoch indices (subset of shuffled indices)
-        std::vector<size_t> epoch_indices(all_indices.begin(), all_indices.begin() + samples_per_epoch);
+        std::vector<size_t> epochIndices(all_indices.begin(), all_indices.begin() + samplesPerEpoch);
 
         // Process batches
-        for (size_t i = 0; i < samples_per_epoch; i += config.batchSize) {
-            size_t batchSize = std::min(config.batchSize, samples_per_epoch - i);
+        for (size_t i = 0; i < samplesPerEpoch; i += config.batchSize) {
+            size_t batchSize = std::min(config.batchSize, samplesPerEpoch - i);
             std::atomic<double> batchLoss{0.0};
             optimizer.zeroGrad();
 
             // Parallel processing of batch samples
             std::vector<std::future<void>> futures;
-            size_t chunk_size = std::max(size_t(1), batchSize / num_threads);
-            
-            for (size_t start = 0; start < batchSize; start += chunk_size) {
-                size_t end = std::min(start + chunk_size, batchSize);
+            size_t chunkSize = std::max(size_t(1), batchSize / numThreads);
+
+            for (size_t start = 0; start < batchSize; start += chunkSize) {
+                size_t end = std::min(start + chunkSize, batchSize);
                 futures.push_back(std::async(std::launch::async, [&, start, end]() {
-                    double local_loss = 0.0;
-                    size_t local_correct = 0;
+                    double localLoss = 0.0;
+                    size_t localCorrect = 0;
 
                     for (size_t j = start; j < end; j++) {
-                        const auto &board = datas[epoch_indices[i + j]];
+                        const auto &board = datas[epochIndices[i + j]];
 
                         std::vector<int> inputShape = {1, static_cast<int>(board.boardData.size())};
                         std::vector<int> strides = {static_cast<int>(board.boardData.size()), 1};
@@ -151,14 +151,14 @@ void chessTrain(
                         auto loss = criterion.forward(output, labelIndex);
                         loss.backward();
 
-                        local_loss += loss[0];
+                        localLoss += loss[0];
                         if (predictedClass == labelIndex) {
-                            local_correct++;
+                            localCorrect++;
                         }
                     }
 
-                    batchLoss += local_loss;
-                    correct += local_correct;
+                    batchLoss += localLoss;
+                    correct += localCorrect;
                 }));
             }
 
@@ -171,12 +171,12 @@ void chessTrain(
             epochLoss += static_cast<double>(batchLoss) / batchSize;
         }
 
-        double accuracy = static_cast<double>(correct) / samples_per_epoch;
-        std::cout << "Epoch " << epoch + 1 << "/" << config.epochs 
-                  << " (" << samples_per_epoch << " samples) - Loss: " << std::fixed << std::setprecision(4)
-                  << epochLoss * config.batchSize / samples_per_epoch 
-                  << " - Accuracy: " << std::fixed << std::setprecision(2) << accuracy * 100 
-                  << "% - LR: " << std::scientific << std::setprecision(3) << optimizer.getLearningRate() << std::endl;
+        double accuracy = static_cast<double>(correct) / samplesPerEpoch;
+        std::cout << "Epoch " << epoch + 1 << "/" << config.epochs << " (" << samplesPerEpoch
+                  << " samples) - Loss: " << std::fixed << std::setprecision(4)
+                  << epochLoss * config.batchSize / samplesPerEpoch << " - Accuracy: " << std::fixed
+                  << std::setprecision(2) << accuracy * 100 << "% - LR: " << std::scientific << std::setprecision(3)
+                  << optimizer.getLearningRate() << std::endl;
 
         if (config.shouldSave && !config.saveFile.empty() && (epoch + 1) % 10 == 0) {
             NetworkSaver::saveNetwork(
