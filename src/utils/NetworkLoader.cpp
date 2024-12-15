@@ -8,5 +8,5 @@
 #include "utils/NetworkLoader.hpp"
 
 namespace lava {
-    NetworkConfig NetworkLoader::_config;
-} // namespace lava 
+NetworkConfig NetworkLoader::config;
+} // namespace lava
