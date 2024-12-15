@@ -40,20 +40,20 @@ class NetworkLoader {
 
         config = NetworkConfig::fromBinaryFile(file);
 
-        std::vector<std::shared_ptr<nn::Module<double>>> layers;
+        std::vector<std::shared_ptr<nn::Module<double>>> modules;
         for (uint32_t i = 0; i < header.numLayers; i++) {
             LayerHeader layerHeader{};
             file.read(reinterpret_cast<char *>(&layerHeader), sizeof(layerHeader));
 
             switch (layerHeader.type()) {
                 case LayerType::LINEAR:
-                    layers.push_back(readLinearLayer(file, layerHeader));
+                    modules.push_back(readLinearLayer(file, layerHeader));
                     break;
                 case LayerType::RELU:
-                    layers.push_back(std::make_shared<nn::ReLU<double>>());
+                    modules.push_back(std::make_shared<nn::ReLU<double>>());
                     break;
                 case LayerType::SOFTMAX:
-                    layers.push_back(std::make_shared<nn::Softmax<double>>());
+                    modules.push_back(std::make_shared<nn::Softmax<double>>());
                     break;
                 default:
                     throw std::runtime_error("Unknown layer type");
@@ -61,7 +61,7 @@ class NetworkLoader {
         }
 
         file.close();
-        return std::make_shared<nn::Sequential<double>>(layers);
+        return std::make_shared<nn::Sequential<double>>(modules);
     }
 
     static const NetworkConfig &getLastLoadedConfig()
@@ -129,11 +129,8 @@ class NetworkLoader {
 
         auto &biases = layer->_biases.tensor().datas();
         file.read(reinterpret_cast<char *>(biases.data()), biases.size() * sizeof(double));
-
         return layer;
     }
 };
-
-NetworkConfig NetworkLoader::config;
 
 } // namespace lava

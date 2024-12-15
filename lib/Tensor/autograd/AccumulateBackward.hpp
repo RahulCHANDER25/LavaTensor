@@ -27,8 +27,6 @@ public:
 
     void backward(TensorArray<T> grad) override
     {
-        //std::cout << "Accumulate: ";
-        grad.dispRaw();
         _tensor.grad() += grad;
         _tensor.grad().dispRaw();
     }
