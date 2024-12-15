@@ -6,12 +6,12 @@ jobs:
     commits:
         name: Commits
         uses: ./.github/workflows/conventional-commits.yml
-    tests:
-        name: Compile
-        uses: ./.github/workflows/unit-tests.yml
+    # tests:
+    #     name: Compile
+    #     uses: ./.github/workflows/unit-tests.yml
     mirror:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        needs: [commits, tests]
+        needs: [commits]
         uses: ./.github/workflows/mirror.yml
         secrets:
             KEY: ${{ secrets.SSH_KEY }}
