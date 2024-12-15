@@ -244,9 +244,8 @@ class NetworkGenerator {
         std::cout << "Writing LINEAR layer with type " << static_cast<uint32_t>(LayerType::LINEAR) << std::endl;
         std::cout << "Input size: " << header.inputSize << ", Output size: " << header.outputSize << std::endl;
 
-        file.write(reinterpret_cast<const char *>(&header), sizeof(header));
-
         const auto &weights = layer->_weights.tensor().datas();
+        file.write(reinterpret_cast<const char *>(&header), sizeof(header));
         file.write(reinterpret_cast<const char *>(weights.data()), weights.size() * sizeof(double));
 
         const auto &biases = layer->_biases.tensor().datas();

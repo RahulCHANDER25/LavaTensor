@@ -31,6 +31,7 @@ SRCS_ANA := $(addsuffix .cpp,               \
             lib/Tensor/Tensor               \
             $(addprefix $(SRC_DIR_UTILS),   \
                 FenConverter                \
+                NetworkLoader               \
             )                               \
             $(addprefix $(SRC_DIR_ANA)/,    \
                 main                        \

@@ -52,20 +52,15 @@ int main(int argc, char *argv[])
 {
     try {
         auto args = ArgParser::parseAnalyzerArgs(argc, argv);
-
-        std::cout << "Loading neural network from: " << args.loadFile << std::endl;
         auto model = lava::NetworkLoader::loadNetwork(args.loadFile);
         auto boards = ChessboardParser::parseChessboardFile(args.inputFile);
 
         if (args.isPredictMode) {
-            std::cout << "Running in prediction mode" << std::endl;
             auto predictions = predictPositions(*model, boards);
             for (const auto &pred : predictions) {
                 std::cout << pred << std::endl;
             }
         } else if (args.isTrainMode) {
-            std::cout << "Running in training mode" << std::endl;
-
             lava::train::TrainingConfig config;
             config.shouldSave = !args.saveFile.empty();
             config.saveFile = args.saveFile.empty() ? args.loadFile : args.saveFile;
@@ -77,7 +72,7 @@ int main(int argc, char *argv[])
             config.samplesPerEpoch = networkConfig.hyperparameters().samplesPerEpoch;
 
             // Load learning rate scheduler configuration
-            const auto& lrScheduler = networkConfig.lrScheduler();
+            const auto &lrScheduler = networkConfig.lrScheduler();
             config.schedulerType = lrScheduler.type;
             config.decayRate = lrScheduler.decayRate;
             config.decaySteps = lrScheduler.decaySteps;

@@ -10,8 +10,8 @@ import logging
 import datetime
 import sys
 
-N_TRIALS = 100
-EPOCHS = 50
+N_TRIALS = 1000
+EPOCHS = 100
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,7 +21,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def create_network_config(trial: optuna.Trial, base_config_path: str, output_path: str) -> None:
-    """Create a new network configuration file with trial parameters."""
     config = configparser.ConfigParser()
     config.read(base_config_path)
     params_for_logging = {}
@@ -34,14 +33,14 @@ def create_network_config(trial: optuna.Trial, base_config_path: str, output_pat
     params_for_logging['batch_size'] = batch_size_multiplier * 16
 
     params_for_logging['dropout'] = trial.suggest_float('dropout', 0.0, 0.5)
-    params_for_logging['decay_rate'] = trial.suggest_float('decay_rate', 0.5, 0.99)
+    params_for_logging['decay_rate'] = trial.suggest_float('decay_rate', 0.8, 0.99)
     params_for_logging['decay_steps'] = trial.suggest_int('decay_steps', 1, 10)
     params_for_logging['min_lr'] = trial.suggest_float('min_lr', 1e-5, 1e-3, log=True)
 
     # Training parameters
     params_for_logging['epochs'] = EPOCHS
     # Samples per epoch as multiple of batch size
-    samples_multiplier = trial.suggest_int('samples_per_epoch_multiplier', 8, 64)  # 8*batch_size to 64*batch_size
+    samples_multiplier = trial.suggest_int('samples_per_epoch_multiplier', 8, 32)  # 8*batch_size to 64*batch_size
     params_for_logging['samples_per_epoch'] = samples_multiplier * params_for_logging['batch_size']
 
     config['hyperparameters']['learning_rate'] = str(params_for_logging['learning_rate'])
@@ -61,7 +60,7 @@ def create_network_config(trial: optuna.Trial, base_config_path: str, output_pat
 
     # Calculate valid power of 2 sizes (all greater than output size 6)
     min_power = 3  # 2^3 = 8 (first power of 2 > 6)
-    max_power = 12  # 2^12 = 4096
+    max_power = 11  # 2^11 = 2048
     valid_sizes = [2**i for i in range(min_power, max_power + 1)]
 
 
@@ -105,7 +104,6 @@ def create_network_config(trial: optuna.Trial, base_config_path: str, output_pat
     return params_for_logging
 
 def extract_epoch_metrics(line: str) -> Dict[str, float]:
-    """Extract metrics from a single epoch line."""
     epoch_pattern = r'Epoch (\d+)/\d+ \(\d+ samples\) - Loss: ([\d.]+) - Accuracy: ([\d.]+)% - LR: ([\d.e-]+)'
     match = re.match(epoch_pattern, line)
     if match:
@@ -119,14 +117,12 @@ def extract_epoch_metrics(line: str) -> Dict[str, float]:
 
 def print_epoch_row(epoch: int, loss: float, accuracy: float, lr: float,
                    best_acc: float = None, best_loss: float = None) -> None:
-    """Print a single row of the training progress table."""
     acc_indicator = "🔥" if best_acc is not None and accuracy >= best_acc else " "
     loss_indicator = "✨" if best_loss is not None and loss <= best_loss else " "
     row = f"{epoch:^6} │ {loss:^10.4f} │ {accuracy:^9.2f}% │ {lr:^10.2e} {acc_indicator}{loss_indicator}"
     logger.info(row)
 
 def train_network(network_path: str, config_path: str, trained_path: str) -> Dict[str, float]:
-    """Train the network with real-time progress display."""
     metrics = {
         'accuracy_history': [],
         'loss_history': [],
@@ -205,7 +201,6 @@ def train_network(network_path: str, config_path: str, trained_path: str) -> Dic
     return metrics
 
 def objective(trial: optuna.Trial) -> float:
-    """Objective function for Optuna optimization."""
     trial_config_path = f'examples/trial_{trial.number}.conf'
     network_path = f'trial_{trial.number}_1.nn'
     trained_path = f'models/trial_{trial.number}.nn'
@@ -280,7 +275,6 @@ def objective(trial: optuna.Trial) -> float:
                 logger.warning(f"⚠️ Failed to clean up file {file}: {e}")
 
 def main():
-    """Main function to run the hyperparameter optimization."""
     os.makedirs('models', exist_ok=True)
 
     study_name = "chess_network_optimization"
