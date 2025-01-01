@@ -26,7 +26,7 @@ The name of our library was ***LavaTensor*** as a reference of *PyTorch* [1] lib
 
 Autograd is also known as “**reverse mode automatic differentiation”** is a method used in the gradient descent in machine learning. During a forward pass the Autograd creates a computation graph which will be used in the backward pass by going through this graph reversely and applying the Chain Rule [2].
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image.png)
+![image.png](Research-Images/image.png)
 
 This is an example of Autograd Computation graph, the backward pass will go through the graph from bottom to the top *Tensors*, also known as **leafs** (here *weight* and *bias*), and the “**Accumulate**” the gradient calculated before in their Tensors.
 
@@ -38,7 +38,7 @@ As for the loss function we use *Cross Entropy Loss* [3] which offers better per
 
 Here is an example of a neural network architecture we had:
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%201.png)
+![image.png](Research-Images/image%201.png)
 
 Note that with the implementation of Cross-Entropy loss that we did implement has a softmax in it. So for *LavaTensor* the Softmax layer is not needed.
 
@@ -48,19 +48,19 @@ During the benchmarks we used **Matplotlib** to make really useful graphs to vis
 
 We used different types of layers as you can see below:
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%202.png)
+![image.png](Research-Images/image%202.png)
 
 Here we tried differents density of layers with the number of parameters/neurons (weights/biases).
 
 Below you can see all the different learning rates we tried:
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%203.png)
+![image.png](Research-Images/image%203.png)
 
 As we can see as the lower the learning rate is the more accurate the model is, but the learning is slower.
 
 During our trainings we modeled this heatmap to determinate which parameters correlate to each others, and so which parameters are more important to change to make a better model.
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%204.png)
+![image.png](Research-Images/image%204.png)
 
 As you can see the most important information is that hidden layers are correlated to each others. We can also see that the *learning rate (LR)* an Hyper-parameter that does not correlate a lot to any other parameter. In bigger network it is usually better to have low learning rate there are a lots of techniques to twink this parameter, but in this use case we know that we could freely change this value (at a certain point of course).
 
@@ -89,13 +89,13 @@ Thanks to Autograd we were able to had multi-threading for training.
 
 Here is a graph of the network architectures we tried.
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%205.png)
+![image.png](Research-Images/image%205.png)
 
 The model we are talking about is the trial 238, that finally during the training had a success rate near to 90%.
 
 As you can see, in comparison to lots of others models the 238 one perform better than the other.
 
-![image.png](Research%20Paper%20-%20Neural%20Network%2015c79d2dcced8188b18dd65ef78990f6/image%206.png)
+![image.png](Research-Images/image%206.png)
 
 The architecture of this model pays a huge role on it. It is a little model with not too much hidden layers (2), which reduces over-fitting and we did early stops on training when we detect that the loss was stagnating.
 
