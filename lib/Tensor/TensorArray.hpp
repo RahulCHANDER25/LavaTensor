@@ -294,7 +294,19 @@ class TensorArray {
      *
      *  @return Reference to the current Tensor that has the result of the operations.
      */
-    TensorArray &_inPlaceTensorOperation(const TensorArray &oth, std::function<T(const T &, const T &)> func);
+    template <typename Op>
+    TensorArray &_inPlaceTensorOperation(const TensorArray &oth, Op func)
+    {
+        static_assert(
+            std::is_invocable_r_v<T, Op, const T &, const T &>,
+            "Op must be a binary function that takes two Ts and returns a T"
+        );
+        for (size_t i = 0; i < _datas.size(); i++) {
+            this->operator[](i) = func(this->operator[](i), oth[i]);
+        }
+        return *this;
+    }
+
     /**
      *  @brief Do an in-place operation specified by @param func that takes another tensor @param oth on the current
      * tensor. This operation takes the elements of `this` and @param oth one by one and perform the operation to create
@@ -305,7 +317,21 @@ class TensorArray {
      *
      *  @return A new tensor which has the result of the operation done.
      */
-    TensorArray _tensorOperation(const TensorArray &oth, std::function<T(const T &, const T &)> func) const;
+    template <typename Op>
+    TensorArray _tensorOperation(const TensorArray &oth, Op func) const
+    {
+        static_assert(
+            std::is_invocable_r_v<T, Op, const T &, const T &>,
+            "Op must be a binary function that takes two Ts and returns a T"
+        );
+        TensorArray newTensor(_shape, _strides);
+
+        for (size_t i = 0; i < _datas.size(); i++) {
+            newTensor[i] = func(this->operator[](i), oth[i]);
+        }
+        return newTensor;
+    }
+
     /**
      *  @brief Do an in-place operation specified, by @param func , that takes a scalar @param oth , on the current
      * tensor. This operation takes the elements of `this` one by one and perform an in-place operation with k.
@@ -315,7 +341,19 @@ class TensorArray {
      *
      *  @return Reference to the current Tensor that has the result of the operations.
      */
-    TensorArray &_inPlaceScalarOperation(T k, std::function<T(const T &, const T &)> func);
+    template <typename Op>
+    TensorArray &_inPlaceScalarOperation(T k, Op func)
+    {
+        static_assert(
+            std::is_invocable_r_v<T, Op, const T &, const T &>,
+            "Op must be a binary function that takes two Ts and returns a T"
+        );
+        for (size_t i = 0; i < _datas.size(); i++) {
+            this->operator[](i) = func(this->operator[](i), k);
+        }
+        return *this;
+    }
+
     /**
      *  @brief Do an in-place operation specified, by @param func , that takes a scalar @param oth , on the current
      * tensor. This operation takes the elements of `this` one by one and perform an in-place operation with k.
@@ -325,7 +363,21 @@ class TensorArray {
      *
      *  @return A new Tensor that has the result of the operations.
      */
-    TensorArray _scalarOperation(T k, std::function<T(const T &, const T &)> func) const;
+    template <typename Op>
+    TensorArray _scalarOperation(T k, Op func) const
+    {
+        static_assert(
+            std::is_invocable_r_v<T, Op, const T &, const T &>,
+            "Op must be a binary function that takes two Ts and returns a T"
+        );
+        TensorArray<T> newTensor(_shape, _strides);
+
+        for (size_t i = 0; i < _datas.size(); i++) {
+            newTensor[i] = func(this->operator[](i), k);
+        }
+        return newTensor;
+    }
+
     static size_t getStride(size_t k, const std::vector<int> &shape);
 
     std::vector<int> _shape;   /** Shape of the Tensor */

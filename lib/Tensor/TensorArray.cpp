@@ -21,11 +21,11 @@
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
 {
-    //std::cout << "Datas:\n";
-    //for (const auto &elem : _datas) {
-    //    std::cout << elem << " ";
-    //}
-    //std::cout << std::endl;
+    // std::cout << "Datas:\n";
+    // for (const auto &elem : _datas) {
+    //     std::cout << elem << " ";
+    // }
+    // std::cout << std::endl;
 }
 
 template <typename T>
@@ -109,52 +109,6 @@ lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vect
     for (size_t i = 0; i < size; i++) {
         _datas.push_back(T{0});
     }
-}
-
-template <typename T>
-lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceTensorOperation(
-    const TensorArray &oth,
-    std::function<T(const T &, const T &)> func
-)
-{
-    for (size_t i = 0; i < _datas.size(); i++) {
-        this->operator[](i) = func(this->operator[](i), oth[i]);
-    }
-    return *this;
-}
-
-template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::_tensorOperation(
-    const TensorArray &oth,
-    std::function<T(const T &, const T &)> func
-) const
-{
-    TensorArray newTensor(_shape, _strides);
-
-    for (size_t i = 0; i < _datas.size(); i++) {
-        newTensor[i] = func(this->operator[](i), oth[i]);
-    }
-    return newTensor;
-}
-
-template <typename T>
-lava::TensorArray<T> &lava::TensorArray<T>::_inPlaceScalarOperation(T k, std::function<T(const T &, const T &)> func)
-{
-    for (size_t i = 0; i < _datas.size(); i++) {
-        this->operator[](i) = func(this->operator[](i), k);
-    }
-    return *this;
-}
-
-template <typename T>
-lava::TensorArray<T> lava::TensorArray<T>::_scalarOperation(T k, std::function<T(const T &, const T &)> func) const
-{
-    TensorArray<T> newTensor(_shape, _strides);
-
-    for (size_t i = 0; i < _datas.size(); i++) {
-        newTensor[i] = func(this->operator[](i), k);
-    }
-    return newTensor;
 }
 
 template <typename T>

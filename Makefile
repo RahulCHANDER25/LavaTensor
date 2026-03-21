@@ -42,8 +42,12 @@ SRCS_ANA := $(addsuffix .cpp,               \
 
 OBJS_GEN := $(SRCS_GEN:%.cpp=%.o)
 OBJS_ANA := $(SRCS_ANA:%.cpp=%.o)
+OBJS_LIB := lib/Tensor/Tensor.o lib/Tensor/TensorArray.o
 
-all: my_torch_generator my_torch_analyzer
+all: my_torch_generator my_torch_analyzer playground
+
+playground: $(OBJS_LIB)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ main.cpp $(OBJS_LIB) $(LDLIBS)
 
 my_torch_generator: $(OBJS_GEN)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $(OBJS_GEN) $(LDLIBS)
@@ -58,7 +62,7 @@ clean:
 	rm -rf $(OBJS_GEN) $(OBJS_ANA)
 
 fclean: clean
-	rm -rf my_torch_generator my_torch_analyzer
+	rm -rf my_torch_generator my_torch_analyzer playground
 
 re: fclean all
 
