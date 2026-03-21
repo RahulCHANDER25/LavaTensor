@@ -16,10 +16,8 @@ namespace lava {
 
 template <typename T>
 class AddBackward : public GradNode<T> {
-public:
-    AddBackward(Tensor<T> &tensorA, Tensor<T> &tensorB):
-        lava::GradNode<T>(),
-        _onesArr(tensorA.tensor())
+    public:
+    AddBackward(Tensor<T> &tensorA, Tensor<T> &tensorB) : lava::GradNode<T>(), _onesArr(tensorA.tensor())
     {
         std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
 
@@ -27,9 +25,7 @@ public:
         this->_nextGrads.push_back(tensorB.gradNode());
     }
 
-    AddBackward(Tensor<T> &tensorA):
-        lava::GradNode<T>(),
-        _onesArr(tensorA.tensor())
+    AddBackward(Tensor<T> &tensorA) : lava::GradNode<T>(), _onesArr(tensorA.tensor())
     {
         std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
 
@@ -63,8 +59,8 @@ public:
         }
     }
 
-private:
+    private:
     TensorArray<T> _onesArr;
 };
 
-}
+} // namespace lava
