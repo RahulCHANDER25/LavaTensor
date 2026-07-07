@@ -10,9 +10,10 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <functional>
-#include <stdexcept>
+#include <memory>
 #include <vector>
+#include "Device.hpp"
+#include "Storage.hpp"
 #include <initializer_list>
 
 namespace lava {
@@ -98,7 +99,9 @@ class TensorArray {
         if (this != &other) {
             _shape = other._shape;
             _strides = other._strides;
-            _datas = other._datas;
+            _device = other._device;
+            _storage = std::make_shared<Storage<T>>(other._storage->size(), _device);
+            _device->copyHostToDevice(_storage->data(), other._storage->data(), other._storage->size());
         }
         return *this;
     }
@@ -129,102 +132,106 @@ class TensorArray {
 
     TensorArray operator+(const TensorArray &oth) const
     {
-        return _tensorOperation(oth, std::plus<T>());
+        TensorArray result(_shape, _strides);
+        _device->add(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator-(const TensorArray &oth) const
     {
-        return _tensorOperation(oth, std::minus<T>());
+        TensorArray result(_shape, _strides);
+        _device->sub(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator*(const TensorArray &oth) const
     {
-        return _tensorOperation(oth, std::multiplies<T>());
+        TensorArray result(_shape, _strides);
+        _device->mul(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator/(const TensorArray &oth) const
     {
-        return _tensorOperation(oth, [](const T &a, const T &b) {
-            if (b == 0) {
-                throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-            }
-            return std::divides<T>()(a, b);
-        });
+        TensorArray result(_shape, _strides);
+        _device->div(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray &operator+=(TensorArray &oth)
     {
-        return _inPlaceTensorOperation(oth, std::plus<T>());
+        _device->add(_storage->data(), oth._storage->data(), _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator-=(TensorArray &oth)
     {
-        return _inPlaceTensorOperation(oth, std::minus<T>());
+        _device->sub(_storage->data(), oth._storage->data(), _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator*=(TensorArray &oth)
     {
-        return _inPlaceTensorOperation(oth, std::multiplies<T>());
+        _device->mul(_storage->data(), oth._storage->data(), _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator/=(TensorArray &oth)
     {
-        return _inPlaceTensorOperation(oth, [](const T &a, const T &b) {
-            if (b == 0) {
-                throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-            }
-            return std::divides<T>()(a, b);
-        });
+        _device->div(_storage->data(), oth._storage->data(), _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray operator+(T k) const
     {
-        return _scalarOperation(k, std::plus<T>());
+        TensorArray result(_shape, _strides);
+        _device->addScalar(_storage->data(), k, result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator-(T k) const
     {
-        return _scalarOperation(k, std::minus<T>());
+        TensorArray result(_shape, _strides);
+        _device->subScalar(_storage->data(), k, result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator*(T k) const
     {
-        return _scalarOperation(k, std::multiplies<T>());
+        TensorArray result(_shape, _strides);
+        _device->mulScalar(_storage->data(), k, result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray operator/(T k) const
     {
-        return _scalarOperation(k, [](const T &a, const T &b) {
-            if (b == 0) {
-                throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-            }
-            return std::divides<T>()(a, b);
-        });
+        TensorArray result(_shape, _strides);
+        _device->divScalar(_storage->data(), k, result._storage->data(), _storage->size());
+        return result;
     }
 
     TensorArray &operator+=(T k)
     {
-        return _inPlaceScalarOperation(k, std::plus<T>());
+        _device->addScalar(_storage->data(), k, _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator-=(T k)
     {
-        return _inPlaceScalarOperation(k, std::minus<T>());
+        _device->subScalar(_storage->data(), k, _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator*=(T k)
     {
-        return _inPlaceScalarOperation(k, std::multiplies<T>());
+        _device->mulScalar(_storage->data(), k, _storage->data(), _storage->size());
+        return *this;
     }
 
     TensorArray &operator/=(T k)
     {
-        return _inPlaceScalarOperation(k, [](const T &a, const T &b) {
-            if (b == 0) {
-                throw std::logic_error("[ERR] Zero division Error while doing a div operation.");
-            }
-            return std::divides<T>()(a, b);
-        });
+        _device->divScalar(_storage->data(), k, _storage->data(), _storage->size());
+        return *this;
     }
 
     T operator()(std::initializer_list<int> indexes) const;
@@ -274,12 +281,22 @@ class TensorArray {
 
     std::vector<T> &datas()
     {
-        return _datas;
+        return _storage->datas();
     }
 
     const std::vector<T> &datas() const
     {
-        return _datas;
+        return _storage->datas();
+    }
+
+    std::shared_ptr<Device<T>> device() const
+    {
+        return _device;
+    }
+
+    std::shared_ptr<Storage<T>> storage() const
+    {
+        return _storage;
     }
 
     private:
@@ -301,7 +318,7 @@ class TensorArray {
             std::is_invocable_r_v<T, Op, const T &, const T &>,
             "Op must be a binary function that takes two Ts and returns a T"
         );
-        for (size_t i = 0; i < _datas.size(); i++) {
+        for (size_t i = 0; i < _storage->size(); i++) {
             this->operator[](i) = func(this->operator[](i), oth[i]);
         }
         return *this;
@@ -326,7 +343,7 @@ class TensorArray {
         );
         TensorArray newTensor(_shape, _strides);
 
-        for (size_t i = 0; i < _datas.size(); i++) {
+        for (size_t i = 0; i < _storage->size(); i++) {
             newTensor[i] = func(this->operator[](i), oth[i]);
         }
         return newTensor;
@@ -348,7 +365,7 @@ class TensorArray {
             std::is_invocable_r_v<T, Op, const T &, const T &>,
             "Op must be a binary function that takes two Ts and returns a T"
         );
-        for (size_t i = 0; i < _datas.size(); i++) {
+        for (size_t i = 0; i < _storage->size(); i++) {
             this->operator[](i) = func(this->operator[](i), k);
         }
         return *this;
@@ -372,7 +389,7 @@ class TensorArray {
         );
         TensorArray<T> newTensor(_shape, _strides);
 
-        for (size_t i = 0; i < _datas.size(); i++) {
+        for (size_t i = 0; i < _storage->size(); i++) {
             newTensor[i] = func(this->operator[](i), k);
         }
         return newTensor;
@@ -383,7 +400,8 @@ class TensorArray {
     std::vector<int> _shape;   /** Shape of the Tensor */
     std::vector<int> _strides; /** Stride of the Tensor */
 
-    std::vector<T> _datas; /** Underlying datas of the Tensor */
+    std::shared_ptr<Storage<T>> _storage; /** Storage manager for tensor data */
+    std::shared_ptr<Device<T>> _device;   /** Active device backend */
 };
 
 } // namespace lava
@@ -396,8 +414,3 @@ template class lava::TensorArray<int>;
 template class lava::TensorArray<size_t>;
 template class lava::TensorArray<double>;
 template class lava::TensorArray<float>;
-
-// Iterators for strides based operations ? ==> Duro
-// Utils directory
-
-// Documentation

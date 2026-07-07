@@ -6,6 +6,7 @@
 */
 
 #include "TensorArray.hpp"
+#include "CPUDevice.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -21,22 +22,19 @@
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
 {
-    // std::cout << "Datas:\n";
-    // for (const auto &elem : _datas) {
-    //     std::cout << elem << " ";
-    // }
-    // std::cout << std::endl;
+    this->_storage->dispRaw();
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType type) : _shape(shape), _datas()
+lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType type)
+    : _shape(shape), _device(std::make_shared<CPUDevice<T>>())
 {
     size_t size = 1;
 
     for (const auto &s : _shape) {
         size *= s;
     }
-    _datas.reserve(size);
+    _storage = std::make_shared<Storage<T>>(size, _device);
 
     for (size_t k = 0; k < _shape.size(); k++) {
         _strides.push_back(getStride(k, _shape));
@@ -44,13 +42,15 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
     if (type == InitType::RANDOM) {
         std::random_device rd;
         std::mt19937 gen(rd());
+        std::vector<T> temp;
+        temp.reserve(size);
 
         if constexpr (std::is_floating_point_v<T>) {
             // He initialization for floating point types
             T stddev = static_cast<T>(std::sqrt(2.0 / _shape[0]));
             std::normal_distribution<T> dist(0.0, stddev);
             for (size_t i = 0; i < size; i++) {
-                _datas.push_back(dist(gen));
+                temp.push_back(dist(gen));
             }
         } else {
             // For integer types, use a uniform distribution
@@ -58,63 +58,69 @@ lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType typ
             int range = static_cast<int>(std::sqrt(6.0 / _shape[0]));
             std::uniform_int_distribution<int> dist(-range, range);
             for (size_t i = 0; i < size; i++) {
-                _datas.push_back(static_cast<T>(dist(gen)));
+                temp.push_back(static_cast<T>(dist(gen)));
             }
         }
+        _device->copyHostToDevice(_storage->data(), temp.data(), size);
     }
     if (type == InitType::ZERO) {
-        for (size_t i = 0; i < size; i++) {
-            _datas.push_back(T{0});
-        }
+        std::vector<T> temp(size, T{0});
+        _device->copyHostToDevice(_storage->data(), temp.data(), size);
     }
     if (type == InitType::ONES) {
-        for (size_t i = 0; i < size; i++) {
-            _datas.push_back(1);
-        }
+        std::vector<T> temp(size, T{1});
+        _device->copyHostToDevice(_storage->data(), temp.data(), size);
     }
     if (type == InitType::RANGE) {
+        std::vector<T> temp(size);
         for (size_t i = 0; i < size; i++) {
-            _datas.push_back(i);
+            temp[i] = static_cast<T>(i);
         }
+        _device->copyHostToDevice(_storage->data(), temp.data(), size);
     }
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const TensorArray &tensor)
-    : _shape(tensor._shape), _strides(tensor._strides), _datas(tensor._datas)
+    : _shape(tensor._shape), _strides(tensor._strides), _device(tensor._device)
 {
+    _storage = std::make_shared<Storage<T>>(tensor._storage->size(), _device);
+    _device->copyHostToDevice(_storage->data(), tensor._storage->data(), tensor._storage->size());
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
-    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _datas(std::move(tensor._datas))
+    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _storage(std::move(tensor._storage)),
+      _device(std::move(tensor._device))
 {
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
-    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _datas(datas)
+    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _device(std::make_shared<CPUDevice<T>>())
 {
+    _storage = std::make_shared<Storage<T>>(datas.size(), _device);
+    _device->copyHostToDevice(_storage->data(), datas.data(), datas.size());
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides)
-    : _shape(shape), _strides(strides), _datas()
+    : _shape(shape), _strides(strides), _device(std::make_shared<CPUDevice<T>>())
 {
     size_t size = 1;
 
     for (const auto &s : _shape) {
         size *= s;
     }
-    for (size_t i = 0; i < size; i++) {
-        _datas.push_back(T{0});
-    }
+    _storage = std::make_shared<Storage<T>>(size, _device);
 }
 
 template <typename T>
 size_t lava::TensorArray<T>::argmax()
 {
-    return std::distance(_datas.begin(), std::max_element(_datas.begin(), _datas.end()));
+    T *dataPtr = _storage->data();
+    size_t size = _storage->size();
+    return std::distance(dataPtr, std::max_element(dataPtr, dataPtr + size));
 }
 
 template <typename T>
@@ -166,15 +172,19 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
     }
 
     // matmul operation
-    TensorArray<T> newTensor({_shape[0], oth._shape[1]}, TensorArray::InitType::ZERO);
+    TensorArray<T> newTensor({_shape[0], oth._shape[1]}, InitType::ZERO);
 
-    for (int i = 0; i < _shape[0]; i++) {
-        for (int j = 0; j < _shape[1]; j++) {
-            for (int k = 0; k < oth._shape[1]; k++) {
-                newTensor({i, k}) += this->operator()({i, j}) * oth.operator()({j, k});
-            }
-        }
-    }
+    _device->matmul(
+        _storage->data(),
+        _shape,
+        _strides,
+        oth._storage->data(),
+        oth._shape,
+        oth._strides,
+        newTensor._storage->data(),
+        newTensor._shape,
+        newTensor._strides
+    );
 
     if (isUnsqueezedThis) {
         removeDim();
@@ -188,7 +198,8 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
 template <typename T>
 lava::TensorArray<T> &lava::TensorArray<T>::operator=(lava::TensorArray<T> &&oth) noexcept
 {
-    this->_datas = std::move(oth._datas);
+    this->_storage = std::move(oth._storage);
+    this->_device = std::move(oth._device);
     this->_shape = std::move(oth._shape);
     this->_strides = std::move(oth._strides);
     return *this;
@@ -231,21 +242,23 @@ lava::TensorArray<T> &lava::TensorArray<T>::transposed()
 template <typename T>
 T lava::TensorArray<T>::operator[](size_t idx) const
 {
-    if (idx >= _datas.size()) {
-        throw std::out_of_range(std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _datas.size())
+    if (idx >= _storage->size()) {
+        throw std::out_of_range(
+            std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _storage->size())
         );
     }
-    return _datas[idx];
+    return _storage->data()[idx];
 }
 
 template <typename T>
 T &lava::TensorArray<T>::operator[](size_t idx)
 {
-    if (idx >= _datas.size()) {
-        throw std::out_of_range(std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _datas.size())
+    if (idx >= _storage->size()) {
+        throw std::out_of_range(
+            std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _storage->size())
         );
     }
-    return _datas[idx];
+    return _storage->data()[idx];
 }
 
 template <typename T>
@@ -261,7 +274,7 @@ T lava::TensorArray<T>::operator()(std::initializer_list<int> indexes) const
         idx += (*itIndexes) * stride;
         itIndexes++;
     }
-    return _datas[idx];
+    return _storage->data()[idx];
 }
 
 template <typename T>
@@ -280,7 +293,7 @@ T &lava::TensorArray<T>::operator()(std::initializer_list<int> indexes)
         idx += (*itIndexes) * _strides[k];
         itIndexes++;
     }
-    return _datas[idx];
+    return _storage->data()[idx];
 }
 
 template <typename T>

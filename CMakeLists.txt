@@ -23,6 +23,11 @@ if(BUILD_CHESS)
     add_subdirectory(projects/chess)
 endif()
 
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+    add_executable(playground src/main.cpp)
+    target_link_libraries(playground PRIVATE lava)
+endif()
+
 # Enable testing sub-directory
 option(BUILD_TESTS "Build library unit tests" ON)
 if(BUILD_TESTS)
