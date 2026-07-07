@@ -5,7 +5,9 @@ my_torch_analyzer
 compile_commands.json
 venv/
 *.nn
-*.txt
 best_network.conf
 *.db
 *.json
+
+docs/superpowers/
+build/
