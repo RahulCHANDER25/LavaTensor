@@ -33,7 +33,7 @@ add_library(lava STATIC ${LAVA_SOURCES} ${LAVA_CUDA_SOURCES})
 target_include_directories(lava PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lava)
 
 # Enable chess project sub-directory
-option(BUILD_CHESS "Build the chess project applications" ON)
+option(BUILD_CHESS "Build the chess project applications" OFF)
 if(BUILD_CHESS)
     add_subdirectory(projects/chess)
 endif()
