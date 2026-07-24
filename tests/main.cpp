@@ -1,4 +1,5 @@
 #include "Tensor/Tensor.hpp"
+#include "Tensor/CPUDevice.hpp"
 #include <iostream>
 #include <cassert>
 #include <cmath>
