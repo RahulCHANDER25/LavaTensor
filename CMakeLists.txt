@@ -16,6 +16,8 @@ check_language(CUDA)
 
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS "CUDA compilation enabled using ${CMAKE_CUDA_COMPILER}")
     add_compile_definitions(LAVA_HAS_CUDA)
     set(LAVA_CUDA_SOURCES
