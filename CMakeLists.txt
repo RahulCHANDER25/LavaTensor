@@ -11,7 +11,22 @@ set(LAVA_SOURCES
     lava/Tensor/TensorArray.cpp
 )
 
-add_library(lava STATIC ${LAVA_SOURCES})
+include(CheckLanguage)
+check_language(CUDA)
+
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    message(STATUS "CUDA compilation enabled using ${CMAKE_CUDA_COMPILER}")
+    add_compile_definitions(LAVA_HAS_CUDA)
+    set(LAVA_CUDA_SOURCES
+        lava/Tensor/CudaDevice.cu
+    )
+else()
+    message(STATUS "CUDA compiler not found. Building CPU-only LavaTensor.")
+    set(LAVA_CUDA_SOURCES "")
+endif()
+
+add_library(lava STATIC ${LAVA_SOURCES} ${LAVA_CUDA_SOURCES})
 
 # Public include directory so that users of the library (tests, apps)
 # can include headers as <Tensor/Tensor.hpp> or <nn/Linear.hpp>

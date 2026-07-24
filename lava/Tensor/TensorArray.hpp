@@ -50,44 +50,16 @@ class TensorArray {
      *       it inits the underlying datas randomly.
      */
     TensorArray(std::initializer_list<int> shape, InitType type = InitType::RANDOM);
+    TensorArray(std::initializer_list<int> shape, std::shared_ptr<Device<T>> device, InitType type = InitType::RANDOM);
 
-    /**
-     *  @brief Constructor of TensorArray a shape and a strides given as parameters as vectors.
-     *
-     *  @param shape Shape given to the new Tensor created
-     *  @param strides Strides given to the new Tensor created
-     *
-     *  NOTE: This constructor inits the strides with the shape and
-     *        it inits the underlying datas with default value of @tparam T (eg. `0` for `int`).
-     */
     TensorArray(const std::vector<int> &shape, const std::vector<int> &strides);
+    TensorArray(const std::vector<int> &shape, const std::vector<int> &strides, std::shared_ptr<Device<T>> device);
 
-    /**
-     *  @brief Copy constructor of the TensorArray class
-     *
-     *  @param tensor Constant reference to a Tensor array that will be copied.
-     *
-     *  NOTE: This constructor copy everything, that includes the strides and the shape.
-     */
     TensorArray(const TensorArray &tensor);
-
-    /**
-     *  @brief Move constructor of the TensorArray class
-     *
-     *  @param tensor Rvalue reference to a Tensor array that will be copied.
-     *
-     *  NOTE: This constructor move everything, that includes the strides and the shape.
-     */
     TensorArray(TensorArray &&tensor) noexcept;
 
-    /**
-     *  @brief Copy constructor of the TensorArray class
-     *
-     *  @param datas Constant reference to a vector with the underlying datas of the tensor.
-     *
-     *  NOTE: The shape is the size of the @param datas vector, and the strides in 1.
-     */
     TensorArray(const std::vector<T> &datas);
+    TensorArray(const std::vector<T> &datas, std::shared_ptr<Device<T>> device);
 
     /**
      *  @brief Default destructor of the TensorArray class

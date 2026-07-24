@@ -3,6 +3,10 @@
 #include <cassert>
 #include <cmath>
 
+#ifdef LAVA_HAS_CUDA
+#include "Tensor/CudaDevice.hpp"
+#endif
+
 void test_tensor_creation()
 {
     std::cout << "[RUN] test_tensor_creation..." << std::endl;
@@ -54,6 +58,66 @@ void test_simple_autograd()
     std::cout << "[PASS] test_simple_autograd" << std::endl;
 }
 
+#ifdef LAVA_HAS_CUDA
+void test_cuda_addition()
+{
+    std::cout << "[RUN] test_cuda_addition..." << std::endl;
+
+    auto cudaDev = std::make_shared<lava::CudaDevice<float>>();
+    lava::TensorArray<float> arrA(std::vector<float>{1.5f, 2.5f, 3.5f}, cudaDev);
+    lava::TensorArray<float> arrB(std::vector<float>{0.5f, 1.5f, 2.5f}, cudaDev);
+
+    lava::TensorArray<float> c = arrA + arrB;
+
+    std::vector<float> hostResult(3);
+    cudaDev->copyDeviceToHost(hostResult.data(), c.storage()->data(), 3);
+
+    assert(std::abs(hostResult[0] - 2.0f) < 1e-5);
+    assert(std::abs(hostResult[1] - 4.0f) < 1e-5);
+    assert(std::abs(hostResult[2] - 6.0f) < 1e-5);
+
+    std::cout << "[PASS] test_cuda_addition" << std::endl;
+}
+
+void test_cuda_matmul()
+{
+    std::cout << "[RUN] test_cuda_matmul..." << std::endl;
+
+    auto cudaDev = std::make_shared<lava::CudaDevice<float>>();
+    // A: 2x3
+    lava::TensorArray<float> arrA(std::vector<float>{
+        1.0f, 2.0f, 3.0f,
+        4.0f, 5.0f, 6.0f
+    }, cudaDev);
+    arrA.shape() = {2, 3};
+    arrA.strides() = {3, 1};
+
+    // B: 3x2
+    lava::TensorArray<float> arrB(std::vector<float>{
+        7.0f, 8.0f,
+        9.0f, 10.0f,
+        11.0f, 12.0f
+    }, cudaDev);
+    arrB.shape() = {3, 2};
+    arrB.strides() = {2, 1};
+
+    lava::TensorArray<float> c = arrA.matmul(arrB);
+
+    std::vector<float> hostResult(4);
+    cudaDev->copyDeviceToHost(hostResult.data(), c.storage()->data(), 4);
+
+    // C = A * B
+    // [1*7 + 2*9 + 3*11,  1*8 + 2*10 + 3*12] = [58,  64]
+    // [4*7 + 5*9 + 6*11,  4*8 + 5*10 + 6*12]   [139, 154]
+    assert(std::abs(hostResult[0] - 58.0f) < 1e-5);
+    assert(std::abs(hostResult[1] - 64.0f) < 1e-5);
+    assert(std::abs(hostResult[2] - 139.0f) < 1e-5);
+    assert(std::abs(hostResult[3] - 154.0f) < 1e-5);
+
+    std::cout << "[PASS] test_cuda_matmul" << std::endl;
+}
+#endif
+
 int main()
 {
     std::cout << "Starting LavaTensor Unit Tests..." << std::endl;
@@ -62,6 +126,11 @@ int main()
     test_tensor_creation();
     test_tensor_addition();
     test_simple_autograd();
+
+#ifdef LAVA_HAS_CUDA
+    test_cuda_addition();
+    test_cuda_matmul();
+#endif
 
     std::cout << "----------------------------------" << std::endl;
     std::cout << "All tests passed successfully!" << std::endl;

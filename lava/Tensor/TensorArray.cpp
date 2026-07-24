@@ -22,12 +22,23 @@
 template <typename T>
 void lava::TensorArray<T>::dispRaw()
 {
-    this->_storage->dispRaw();
+    if (_device->isCPU()) {
+        for (size_t i = 0; i < _storage->size(); ++i) {
+            std::cout << _storage->data()[i] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, InitType type)
-    : _shape(shape), _device(std::make_shared<CPUDevice<T>>())
+    : TensorArray(shape, std::make_shared<CPUDevice<T>>(), type)
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(std::initializer_list<int> shape, std::shared_ptr<Device<T>> device, InitType type)
+    : _shape(shape), _device(device)
 {
     size_t size = 1;
 
@@ -90,14 +101,20 @@ lava::TensorArray<T>::TensorArray(const TensorArray &tensor)
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
-    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _storage(std::move(tensor._storage)),
-      _device(std::move(tensor._device))
+    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)),
+      _storage(std::move(tensor._storage)), _device(std::move(tensor._device))
 {
 }
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
-    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _device(std::make_shared<CPUDevice<T>>())
+    : TensorArray(datas, std::make_shared<CPUDevice<T>>())
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas, std::shared_ptr<Device<T>> device)
+    : _shape(std::initializer_list<int>{(int)datas.size()}), _strides(1), _device(device)
 {
     _storage = std::make_shared<Storage<T>>(datas.size(), _device);
     _device->copyHostToDevice(_storage->data(), datas.data(), datas.size());
@@ -105,7 +122,13 @@ lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides)
-    : _shape(shape), _strides(strides), _device(std::make_shared<CPUDevice<T>>())
+    : TensorArray(shape, strides, std::make_shared<CPUDevice<T>>())
+{
+}
+
+template <typename T>
+lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides, std::shared_ptr<Device<T>> device)
+    : _shape(shape), _strides(strides), _device(device)
 {
     size_t size = 1;
 

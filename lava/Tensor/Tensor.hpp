@@ -22,6 +22,7 @@ class Tensor {
     Tensor() = delete;
 
     Tensor(std::initializer_list<int> shape);
+    Tensor(std::initializer_list<int> shape, std::shared_ptr<Device<T>> device);
     Tensor(const Tensor &tensor);
     Tensor(const TensorArray<T> &data, bool requiresGrad = false);
     Tensor(const TensorArray<T> &data, std::shared_ptr<GradNode<T>> gradNode, bool requiresGrad = false);
