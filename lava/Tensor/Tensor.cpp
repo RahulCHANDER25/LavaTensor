@@ -23,6 +23,12 @@ lava::Tensor<T>::Tensor(std::initializer_list<int> shape) : _tensor(shape), _gra
 }
 
 template <typename T>
+lava::Tensor<T>::Tensor(std::initializer_list<int> shape, std::shared_ptr<Device<T>> device)
+    : _tensor(shape, device), _grad(shape, device)
+{
+}
+
+template <typename T>
 lava::Tensor<T>::Tensor(const Tensor<T> &tensor) : _tensor(tensor._tensor), _grad(tensor._grad), _gradNode(tensor._gradNode)
 {
 }
