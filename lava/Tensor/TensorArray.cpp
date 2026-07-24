@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <format>
+#include <string>
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -267,7 +267,7 @@ T lava::TensorArray<T>::operator[](size_t idx) const
 {
     if (idx >= _storage->size()) {
         throw std::out_of_range(
-            std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _storage->size())
+            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " + std::to_string(_storage->size()) + "."
         );
     }
     return _storage->data()[idx];
@@ -278,7 +278,7 @@ T &lava::TensorArray<T>::operator[](size_t idx)
 {
     if (idx >= _storage->size()) {
         throw std::out_of_range(
-            std::format("[ERR]: Index {} is out of range of tensor of size {}.", idx, _storage->size())
+            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " + std::to_string(_storage->size()) + "."
         );
     }
     return _storage->data()[idx];
