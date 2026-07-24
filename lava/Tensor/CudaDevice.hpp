@@ -42,6 +42,8 @@ public:
         const T* b, const std::vector<int>& bShape, const std::vector<int>& bStrides,
         T* c, const std::vector<int>& cShape, const std::vector<int>& cStrides
     ) override;
+
+    void dispRaw(const T *data, size_t size) override;
 };
 
 } // namespace lava
