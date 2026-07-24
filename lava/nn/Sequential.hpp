@@ -25,6 +25,13 @@ class Sequential : public Module<T> {
 
     ~Sequential() override = default;
 
+    void to(std::shared_ptr<Device<T>> device) override
+    {
+        for (auto &mod : _modules) {
+            mod->to(device);
+        }
+    }
+
     Tensor<T> forward(Tensor<T> &in) override
     {
         Tensor<T> out{in};

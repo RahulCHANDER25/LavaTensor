@@ -96,11 +96,23 @@ lava::Tensor<T> lava::Tensor<T>::sum()
 {
     T sumVal{0};
 
-    for (const auto &val: _tensor.datas()) {
-        sumVal += val;
+    if (_tensor.device()->isCPU()) {
+        for (const auto &val: _tensor.datas()) {
+            sumVal += val;
+        }
+    } else {
+        std::vector<T> hostData(_tensor.storage()->size());
+        _tensor.device()->copyDeviceToHost(hostData.data(), _tensor.storage()->data(), hostData.size());
+        for (const auto &val: hostData) {
+            sumVal += val;
+        }
     }
-    TensorArray<T> arr{1};
-    arr[0] = sumVal;
+    TensorArray<T> arr({1}, _tensor.device());
+    if (arr.device()->isCPU()) {
+        arr[0] = sumVal;
+    } else {
+        arr.device()->copyHostToDevice(arr.storage()->data(), &sumVal, 1);
+    }
     auto gradNode = std::make_shared<SumBackward<T>>(*this);
     
     return createWithGrad(arr, gradNode);
@@ -269,7 +281,12 @@ template <typename T>
 void lava::Tensor<T>::zeroGrad()
 {
     if (_requiresGrad) { // Not here
-        std::fill(_grad.datas().begin(), _grad.datas().end(), T{0});
+        if (_grad.device()->isCPU()) {
+            std::fill(_grad.datas().begin(), _grad.datas().end(), T{0});
+        } else {
+            std::vector<T> zeros(_grad.storage()->size(), T{0});
+            _grad.device()->copyHostToDevice(_grad.storage()->data(), zeros.data(), zeros.size());
+        }
     }
 }
 
@@ -280,4 +297,11 @@ lava::Tensor<T> lava::Tensor<T>::createWithGrad(
 )
 {
     return Tensor{data, gradNode, true};
+}
+
+template <typename T>
+void lava::Tensor<T>::to(std::shared_ptr<Device<T>> device)
+{
+    _tensor.to(device);
+    _grad.to(device);
 }

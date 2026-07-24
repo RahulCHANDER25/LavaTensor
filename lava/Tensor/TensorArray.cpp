@@ -11,11 +11,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <string>
 #include <iostream>
 #include <iterator>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <initializer_list>
 
@@ -101,14 +101,13 @@ lava::TensorArray<T>::TensorArray(const TensorArray &tensor)
 
 template <typename T>
 lava::TensorArray<T>::TensorArray(TensorArray &&tensor) noexcept
-    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)),
-      _storage(std::move(tensor._storage)), _device(std::move(tensor._device))
+    : _shape(std::move(tensor._shape)), _strides(std::move(tensor._strides)), _storage(std::move(tensor._storage)),
+      _device(std::move(tensor._device))
 {
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<T> &datas)
-    : TensorArray(datas, std::make_shared<CPUDevice<T>>())
+lava::TensorArray<T>::TensorArray(const std::vector<T> &datas) : TensorArray(datas, std::make_shared<CPUDevice<T>>())
 {
 }
 
@@ -127,7 +126,11 @@ lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vect
 }
 
 template <typename T>
-lava::TensorArray<T>::TensorArray(const std::vector<int> &shape, const std::vector<int> &strides, std::shared_ptr<Device<T>> device)
+lava::TensorArray<T>::TensorArray(
+    const std::vector<int> &shape,
+    const std::vector<int> &strides,
+    std::shared_ptr<Device<T>> device
+)
     : _shape(shape), _strides(strides), _device(device)
 {
     size_t size = 1;
@@ -195,7 +198,7 @@ lava::TensorArray<T> lava::TensorArray<T>::matmul(TensorArray &oth) // only 2 DI
     }
 
     // matmul operation
-    TensorArray<T> newTensor({_shape[0], oth._shape[1]}, InitType::ZERO);
+    TensorArray<T> newTensor({_shape[0], oth._shape[1]}, _device, InitType::ZERO);
 
     _device->matmul(
         _storage->data(),
@@ -240,12 +243,28 @@ lava::TensorArray<T> lava::TensorArray<T>::transpose() const
     std::reverse_copy(_shape.begin(), _shape.end(), newShape.begin());
     std::reverse_copy(_strides.begin(), _strides.end(), newStrides.begin());
 
-    TensorArray<T> result(newShape, newStrides);
+    TensorArray<T> result(newShape, newStrides, _device);
 
-    for (int i = 0; i < _shape[0]; i++) {
-        for (int j = 0; j < _shape[1]; j++) {
-            result({i, j}) = this->operator()({i, j});
+    if (_device->isCPU()) {
+        for (int i = 0; i < _shape[0]; i++) {
+            for (int j = 0; j < _shape[1]; j++) {
+                result({i, j}) = this->operator()({i, j});
+            }
         }
+    } else {
+        // GPU fallback: copy to host, transpose, copy back
+        std::vector<T> hostThis(_storage->size());
+        _device->copyDeviceToHost(hostThis.data(), _storage->data(), _storage->size());
+
+        std::vector<T> hostResult(result._storage->size());
+        for (int i = 0; i < _shape[0]; i++) {
+            for (int j = 0; j < _shape[1]; j++) {
+                int thisIdx = i * _strides[0] + j * _strides[1];
+                int resIdx = j * result._strides[0] + i * result._strides[1];
+                hostResult[resIdx] = hostThis[thisIdx];
+            }
+        }
+        _device->copyHostToDevice(result._storage->data(), hostResult.data(), result._storage->size());
     }
     return result;
 }
@@ -267,7 +286,8 @@ T lava::TensorArray<T>::operator[](size_t idx) const
 {
     if (idx >= _storage->size()) {
         throw std::out_of_range(
-            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " + std::to_string(_storage->size()) + "."
+            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " +
+            std::to_string(_storage->size()) + "."
         );
     }
     return _storage->data()[idx];
@@ -278,7 +298,8 @@ T &lava::TensorArray<T>::operator[](size_t idx)
 {
     if (idx >= _storage->size()) {
         throw std::out_of_range(
-            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " + std::to_string(_storage->size()) + "."
+            "[ERR]: Index " + std::to_string(idx) + " is out of range of tensor of size " +
+            std::to_string(_storage->size()) + "."
         );
     }
     return _storage->data()[idx];
@@ -331,4 +352,25 @@ size_t lava::TensorArray<T>::getStride(size_t k, const std::vector<int> &shape)
         stride *= shape[j];
     }
     return stride;
+}
+
+template <typename T>
+void lava::TensorArray<T>::to(std::shared_ptr<Device<T>> device)
+{
+    if (_device == device) {
+        return;
+    }
+    auto newStorage = std::make_shared<Storage<T>>(_storage->size(), device);
+    if (_device->isCPU() && !device->isCPU()) {
+        device->copyHostToDevice(newStorage->data(), _storage->data(), _storage->size());
+    } else if (!_device->isCPU() && device->isCPU()) {
+        _device->copyDeviceToHost(newStorage->data(), _storage->data(), _storage->size());
+    } else {
+        // GPU to GPU, or CPU to CPU
+        std::vector<T> temp(_storage->size());
+        _device->copyDeviceToHost(temp.data(), _storage->data(), _storage->size());
+        device->copyHostToDevice(newStorage->data(), temp.data(), temp.size());
+    }
+    _storage = newStorage;
+    _device = device;
 }

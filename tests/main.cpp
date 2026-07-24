@@ -116,6 +116,37 @@ void test_cuda_matmul()
 
     std::cout << "[PASS] test_cuda_matmul" << std::endl;
 }
+
+void test_cuda_device_transfer()
+{
+    std::cout << "[RUN] test_cuda_device_transfer..." << std::endl;
+
+    auto cpuDev = std::make_shared<lava::CPUDevice<float>>();
+    auto cudaDev = std::make_shared<lava::CudaDevice<float>>();
+
+    // Create on CPU
+    lava::TensorArray<float> a(std::vector<float>{1.0f, 2.0f, 3.0f}, cpuDev);
+    assert(a.device()->isCPU());
+
+    // Transfer to GPU
+    a.to(cudaDev);
+    assert(!a.device()->isCPU());
+
+    // Do GPU math operation
+    lava::TensorArray<float> b(std::vector<float>{10.0f, 20.0f, 30.0f}, cudaDev);
+    lava::TensorArray<float> c = a + b;
+
+    // Transfer result back to CPU
+    c.to(cpuDev);
+    assert(c.device()->isCPU());
+
+    // Verify values
+    assert(std::abs(c[0] - 11.0f) < 1e-5);
+    assert(std::abs(c[1] - 22.0f) < 1e-5);
+    assert(std::abs(c[2] - 33.0f) < 1e-5);
+
+    std::cout << "[PASS] test_cuda_device_transfer" << std::endl;
+}
 #endif
 
 int main()
@@ -130,6 +161,7 @@ int main()
 #ifdef LAVA_HAS_CUDA
     test_cuda_addition();
     test_cuda_matmul();
+    test_cuda_device_transfer();
 #endif
 
     std::cout << "----------------------------------" << std::endl;

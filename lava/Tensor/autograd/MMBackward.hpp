@@ -49,8 +49,13 @@ public:
     void backward() override
     {
         // This should never be called without a gradient
-        TensorArray<T> ones(_tensorACpy.shape(), _tensorACpy.strides());
-        std::fill(ones.datas().begin(), ones.datas().end(), 1);
+        TensorArray<T> ones(_tensorACpy.shape(), _tensorACpy.strides(), _tensorACpy.device());
+        if (ones.device()->isCPU()) {
+            std::fill(ones.datas().begin(), ones.datas().end(), T{1});
+        } else {
+            std::vector<T> temp(ones.storage()->size(), T{1});
+            ones.device()->copyHostToDevice(ones.storage()->data(), temp.data(), temp.size());
+        }
         backward(ones);
     }
 

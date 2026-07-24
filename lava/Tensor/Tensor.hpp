@@ -29,6 +29,7 @@ class Tensor {
 
     void backward();
     void zeroGrad();
+    void to(std::shared_ptr<Device<T>> device);
 
     bool requiresGrad() const
     {

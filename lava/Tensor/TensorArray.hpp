@@ -104,28 +104,28 @@ class TensorArray {
 
     TensorArray operator+(const TensorArray &oth) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->add(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator-(const TensorArray &oth) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->sub(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator*(const TensorArray &oth) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->mul(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator/(const TensorArray &oth) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->div(_storage->data(), oth._storage->data(), result._storage->data(), _storage->size());
         return result;
     }
@@ -156,28 +156,28 @@ class TensorArray {
 
     TensorArray operator+(T k) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->addScalar(_storage->data(), k, result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator-(T k) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->subScalar(_storage->data(), k, result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator*(T k) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->mulScalar(_storage->data(), k, result._storage->data(), _storage->size());
         return result;
     }
 
     TensorArray operator/(T k) const
     {
-        TensorArray result(_shape, _strides);
+        TensorArray result(_shape, _strides, _device);
         _device->divScalar(_storage->data(), k, result._storage->data(), _storage->size());
         return result;
     }
@@ -270,6 +270,8 @@ class TensorArray {
     {
         return _storage;
     }
+
+    void to(std::shared_ptr<Device<T>> device);
 
     private:
     // TODO: Checks of shape to be done !
