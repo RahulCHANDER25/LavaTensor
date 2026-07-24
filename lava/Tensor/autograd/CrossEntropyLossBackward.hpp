@@ -25,7 +25,14 @@ class CrossEntropyLossBackward : public GradNode<T> {
 
     void backward(TensorArray<T> grad) override
     {
-        _res[_targetIndex] -= 1;
+        if (_res.device()->isCPU()) {
+            _res[_targetIndex] -= 1;
+        } else {
+            T val;
+            _res.device()->copyDeviceToHost(&val, _res.storage()->data() + _targetIndex, 1);
+            val -= 1;
+            _res.device()->copyHostToDevice(_res.storage()->data() + _targetIndex, &val, 1);
+        }
         if (this->_nextGrads[0]) {
             this->_nextGrads[0]->backward(_res * grad);
         }
@@ -33,7 +40,14 @@ class CrossEntropyLossBackward : public GradNode<T> {
 
     void backward() override
     {
-        _res[_targetIndex] -= 1;
+        if (_res.device()->isCPU()) {
+            _res[_targetIndex] -= 1;
+        } else {
+            T val;
+            _res.device()->copyDeviceToHost(&val, _res.storage()->data() + _targetIndex, 1);
+            val -= 1;
+            _res.device()->copyHostToDevice(_res.storage()->data() + _targetIndex, &val, 1);
+        }
         if (this->_nextGrads[0]) {
             this->_nextGrads[0]->backward(_res);
         }

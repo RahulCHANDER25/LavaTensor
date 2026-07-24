@@ -25,6 +25,12 @@ public:
 
     ~Linear() override = default;
 
+    void to(std::shared_ptr<Device<T>> device) override
+    {
+        _weights.to(device);
+        _biases.to(device);
+    }
+
     Tensor<T> forward(Tensor<T> &x) override
     {
         return x.matmul(this->_weights) + _biases;

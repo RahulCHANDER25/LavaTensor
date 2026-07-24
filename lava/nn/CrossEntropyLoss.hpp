@@ -23,29 +23,43 @@ class CrossEntropyLoss {
     Tensor<T> forward(Tensor<T> &input, size_t targetIndex)
     {
         const T epsilon = 1e-7;
-        const auto &inputData = input.tensor().datas();
+
+        std::vector<T> hostInput;
+        if (input.tensor().device()->isCPU()) {
+            hostInput = input.tensor().datas();
+        } else {
+            hostInput.resize(input.tensor().storage()->size());
+            input.tensor().device()->copyDeviceToHost(hostInput.data(), input.tensor().storage()->data(), hostInput.size());
+        }
 
         // Find max for numerical stability
-        T maxVal = inputData[0];
-        for (size_t i = 1; i < inputData.size(); ++i) {
-            maxVal = std::max(maxVal, inputData[i]);
+        T maxVal = hostInput[0];
+        for (size_t i = 1; i < hostInput.size(); ++i) {
+            maxVal = std::max(maxVal, hostInput[i]);
         }
 
         // Compute softmax and cross entropy loss
         T sum = 0;
-        std::vector<T> ce(inputData.size());
-        for (size_t i = 0; i < inputData.size(); ++i) {
-            ce[i] = std::exp(inputData[i] - maxVal);
+        std::vector<T> ce(hostInput.size());
+        for (size_t i = 0; i < hostInput.size(); ++i) {
+            ce[i] = std::exp(hostInput[i] - maxVal);
             sum += ce[i];
         }
 
         // Normalize and compute loss
-        Tensor<T> output({1}, false);
+        T lossVal = 0;
         for (size_t i = 0; i < ce.size(); ++i) {
             ce[i] /= sum;
             if (i == targetIndex) {
-                output[0] = -std::log(std::max(ce[i], epsilon));
+                lossVal = -std::log(std::max(ce[i], epsilon));
             }
+        }
+
+        Tensor<T> output({1}, input.tensor().device());
+        if (output.tensor().device()->isCPU()) {
+            output[0] = lossVal;
+        } else {
+            output.tensor().device()->copyHostToDevice(output.tensor().storage()->data(), &lossVal, 1);
         }
 
         auto gradNode = std::make_shared<CrossEntropyLossBackward<T>>(input, targetIndex);

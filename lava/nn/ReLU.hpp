@@ -24,11 +24,23 @@ class ReLU : public Module<T> {
 
     Tensor<T> forward(Tensor<T> &input) override
     {
-        Tensor<T> output({static_cast<int>(input.datas().size())});
+        size_t size = input.tensor().storage()->size();
+        Tensor<T> output({static_cast<int>(size)}, input.tensor().device());
 
-        // ReLU forward: max(0, x)
-        for (size_t i = 0; i < input.datas().size(); ++i) {
-            output[i] = std::max(static_cast<T>(0), input[i]);
+        if (input.tensor().device()->isCPU()) {
+            for (size_t i = 0; i < size; ++i) {
+                output[i] = std::max(static_cast<T>(0), input[i]);
+            }
+        } else {
+            std::vector<T> hostInput(size);
+            input.tensor().device()->copyDeviceToHost(hostInput.data(), input.tensor().storage()->data(), size);
+            
+            std::vector<T> hostOutput(size);
+            for (size_t i = 0; i < size; ++i) {
+                hostOutput[i] = std::max(static_cast<T>(0), hostInput[i]);
+            }
+            
+            output.tensor().device()->copyHostToDevice(output.tensor().storage()->data(), hostOutput.data(), size);
         }
 
         auto gradNode = std::make_shared<ReLUBackward<T>>(input);

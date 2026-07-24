@@ -17,6 +17,7 @@ class Module {
     virtual ~Module() = default;
 
     virtual Tensor<T> forward(Tensor<T> &input) = 0;
+    virtual void to(std::shared_ptr<Device<T>> device) {}
 
     Tensor<T> operator()(Tensor<T> &input)
     {

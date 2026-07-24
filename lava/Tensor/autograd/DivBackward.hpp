@@ -28,12 +28,17 @@ public:
     DivBackward(Tensor<T> &tensorA, T k):
         lava::GradNode<T>(),
         _tensorACpy(tensorA.tensor()),
-        _tensorBCpy(tensorA.tensor().shape(), tensorA.tensor().strides())
+        _tensorBCpy(tensorA.tensor().shape(), tensorA.tensor().strides(), tensorA.tensor().device())
     {
         this->_nextGrads.push_back(tensorA.gradNode());
         this->_nextGrads.push_back(nullptr);
 
-        std::fill(_tensorBCpy.datas().begin(), _tensorBCpy.datas().end(), k);
+        if (_tensorBCpy.device()->isCPU()) {
+            std::fill(_tensorBCpy.datas().begin(), _tensorBCpy.datas().end(), k);
+        } else {
+            std::vector<T> temp(_tensorBCpy.storage()->size(), k);
+            _tensorBCpy.device()->copyHostToDevice(_tensorBCpy.storage()->data(), temp.data(), temp.size());
+        }
     }
 
     ~DivBackward() override = default;

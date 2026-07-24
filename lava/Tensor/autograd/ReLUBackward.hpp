@@ -19,8 +19,17 @@ public:
     ReLUBackward(Tensor<T> &input):
         _reluRes(input.tensor())
     {
-        for (size_t i = 0; i < _reluRes.datas().size(); i++) {
-            _reluRes[i] = _reluRes[i] > 0; // if x > 0, grad = 1 else grad = 0
+        if (_reluRes.device()->isCPU()) {
+            for (size_t i = 0; i < _reluRes.datas().size(); i++) {
+                _reluRes[i] = _reluRes[i] > T{0}; // if x > 0, grad = 1 else grad = 0
+            }
+        } else {
+            std::vector<T> hostData(_reluRes.storage()->size());
+            _reluRes.device()->copyDeviceToHost(hostData.data(), _reluRes.storage()->data(), hostData.size());
+            for (size_t i = 0; i < hostData.size(); i++) {
+                hostData[i] = (hostData[i] > T{0}) ? T{1} : T{0};
+            }
+            _reluRes.device()->copyHostToDevice(_reluRes.storage()->data(), hostData.data(), hostData.size());
         }
         this->_nextGrads.push_back(input.gradNode());
     }

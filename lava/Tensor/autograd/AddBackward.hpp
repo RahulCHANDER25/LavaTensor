@@ -19,7 +19,12 @@ class AddBackward : public GradNode<T> {
     public:
     AddBackward(Tensor<T> &tensorA, Tensor<T> &tensorB) : lava::GradNode<T>(), _onesArr(tensorA.tensor())
     {
-        std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
+        if (_onesArr.device()->isCPU()) {
+            std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
+        } else {
+            std::vector<T> temp(_onesArr.storage()->size(), T{1});
+            _onesArr.device()->copyHostToDevice(_onesArr.storage()->data(), temp.data(), temp.size());
+        }
 
         this->_nextGrads.push_back(tensorA.gradNode());
         this->_nextGrads.push_back(tensorB.gradNode());
@@ -27,7 +32,12 @@ class AddBackward : public GradNode<T> {
 
     AddBackward(Tensor<T> &tensorA) : lava::GradNode<T>(), _onesArr(tensorA.tensor())
     {
-        std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
+        if (_onesArr.device()->isCPU()) {
+            std::fill(_onesArr.datas().begin(), _onesArr.datas().end(), T{1});
+        } else {
+            std::vector<T> temp(_onesArr.storage()->size(), T{1});
+            _onesArr.device()->copyHostToDevice(_onesArr.storage()->data(), temp.data(), temp.size());
+        }
 
         this->_nextGrads.push_back(tensorA.gradNode());
         this->_nextGrads.push_back(nullptr);
