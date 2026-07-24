@@ -228,6 +228,16 @@ void CudaDevice<T>::matmul(
     cudaDeviceSynchronize();
 }
 
+template <typename T>
+void CudaDevice<T>::dispRaw(const T *data, size_t size) {
+    std::vector<T> hostData(size);
+    copyDeviceToHost(hostData.data(), data, size);
+    for (size_t i = 0; i < size; ++i) {
+        std::cout << hostData[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
 // Explicit instantiations
 template class CudaDevice<int>;
 template class CudaDevice<size_t>;
